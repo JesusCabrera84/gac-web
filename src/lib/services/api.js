@@ -8,58 +8,58 @@ import { PUBLIC_GAC_API_URL } from '$env/static/public';
  * @returns {Promise<any>}
  */
 export async function api(endpoint, options = {}) {
-    const $auth = get(auth);
-    /** @type {any} */
-    const headers = {
-        'Content-Type': 'application/json',
-        ...options.headers
-    };
+	const $auth = get(auth);
+	/** @type {any} */
+	const headers = {
+		'Content-Type': 'application/json',
+		...options.headers
+	};
 
-    if (options.body instanceof FormData) {
-        delete headers['Content-Type'];
-    }
+	if (options.body instanceof FormData) {
+		delete headers['Content-Type'];
+	}
 
-    if ($auth.token) {
-        headers['Authorization'] = `Bearer ${$auth.token}`;
-    }
+	if ($auth.token) {
+		headers['Authorization'] = `Bearer ${$auth.token}`;
+	}
 
-    const config = {
-        ...options,
-        headers
-    };
+	const config = {
+		...options,
+		headers
+	};
 
-    // Ensure endpoint starts with /
-    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+	// Ensure endpoint starts with /
+	const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 
-    // Remove trailing slash from base URL if present
-    const baseUrl = PUBLIC_GAC_API_URL.replace(/\/$/, '');
+	// Remove trailing slash from base URL if present
+	const baseUrl = PUBLIC_GAC_API_URL.replace(/\/$/, '');
 
-    // Construct URL with /api/v1 prefix
-    const url = `${baseUrl}/api/v1${path}`;
+	// Construct URL with /api/v1 prefix
+	const url = `${baseUrl}/api/v1${path}`;
 
-    try {
-        const response = await fetch(url, config);
+	try {
+		const response = await fetch(url, config);
 
-        if (!response.ok) {
-            // Handle 401 Unauthorized - maybe logout?
-            if (response.status === 401) {
-                console.warn('Unauthorized access, logging out...');
-                // auth.logout(); // Circular dependency if we import logout directly, handle in component or separate logic
-            }
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `API Error: ${response.statusText}`);
-        }
+		if (!response.ok) {
+			// Handle 401 Unauthorized - maybe logout?
+			if (response.status === 401) {
+				console.warn('Unauthorized access, logging out...');
+				// auth.logout(); // Circular dependency if we import logout directly, handle in component or separate logic
+			}
+			const errorData = await response.json().catch(() => ({}));
+			throw new Error(errorData.message || `API Error: ${response.statusText}`);
+		}
 
-        // Return null for 204 No Content
-        if (response.status === 204) {
-            return null;
-        }
+		// Return null for 204 No Content
+		if (response.status === 204) {
+			return null;
+		}
 
-        return await response.json();
-    } catch (error) {
-        console.error('API Request Failed:', error);
-        throw error;
-    }
+		return await response.json();
+	} catch (error) {
+		console.error('API Request Failed:', error);
+		throw error;
+	}
 }
 
 // Cache for internal tokens: serviceName -> { token, expiration }
@@ -71,38 +71,37 @@ const internalTokenCache = new Map();
  * @returns {Promise<string>}
  */
 export async function getInternalToken(service) {
-    const now = Date.now();
-    const cacheKey = service;
-    const cached = internalTokenCache.get(cacheKey);
+	const now = Date.now();
+	const cacheKey = service;
+	const cached = internalTokenCache.get(cacheKey);
 
-    // Use cached token if valid (buffer of 30 seconds before expiration)
-    // Token expires in 5 minutes, we cache for 4.5 minutes.
-    if (cached && now < cached.expiration) {
-        return cached.token;
-    }
+	// Use cached token if valid (buffer of 30 seconds before expiration)
+	// Token expires in 5 minutes, we cache for 4.5 minutes.
+	if (cached && now < cached.expiration) {
+		return cached.token;
+	}
 
-    try {
-        console.log(`Fetching new internal token for ${service}...`);
+	try {
+		console.log(`Fetching new internal token for ${service}...`);
 
-        // Use the existing api wrapper to make the request. 
-        // This automatically adds the current user's Bearer token.
-        const response = await api(`/internal/tokens/${service}`, {
-            method: 'POST'
-        });
+		// Use the existing api wrapper to make the request.
+		// This automatically adds the current user's Bearer token.
+		const response = await api(`/internal/tokens/${service}`, {
+			method: 'POST'
+		});
 
-        if (response && response.data) {
-            const token = response.data;
-            // Token expires in 5 minutes (300 seconds). Set expiration to 4.5 minutes (270 seconds) from now.
-            const expiration = now + (4.5 * 60 * 1000);
+		if (response && response.data) {
+			const token = response.data;
+			// Token expires in 5 minutes (300 seconds). Set expiration to 4.5 minutes (270 seconds) from now.
+			const expiration = now + 4.5 * 60 * 1000;
 
-            internalTokenCache.set(cacheKey, { token, expiration });
-            return token;
-        } else {
-            throw new Error(`Invalid response from token endpoint for ${service}`);
-        }
-    } catch (error) {
-        console.error(`Failed to get internal token for ${service}:`, error);
-        throw error;
-    }
+			internalTokenCache.set(cacheKey, { token, expiration });
+			return token;
+		} else {
+			throw new Error(`Invalid response from token endpoint for ${service}`);
+		}
+	} catch (error) {
+		console.error(`Failed to get internal token for ${service}:`, error);
+		throw error;
+	}
 }
-

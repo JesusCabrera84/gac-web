@@ -1,22 +1,22 @@
 <script>
-	import favicon from "$lib/assets/favicon.png";
-	import "../app.css";
-	import { page } from "$app/stores";
-	import { onMount } from "svelte";
-	import { goto } from "$app/navigation";
-	import { auth } from "$lib/stores/auth";
-	import Sidebar from "$lib/components/layout/Sidebar.svelte";
+	import favicon from '$lib/assets/favicon.png';
+	import '../app.css';
+	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { auth } from '$lib/stores/auth';
+	import Sidebar from '$lib/components/layout/Sidebar.svelte';
 
 	let { children } = $props();
 
-	let isLoginPage = $derived($page.url.pathname === "/login");
+	let isLoginPage = $derived($page.url.pathname === '/login');
 
 	onMount(() => {
-		const unsubscribe = auth.subscribe((state) => {
+		const unsubscribe = auth.subscribe(async (state) => {
 			if (!state.isAuthenticated && !isLoginPage) {
-				goto("/login");
+				await goto('/login');
 			} else if (state.isAuthenticated && isLoginPage) {
-				goto("/products");
+				await goto('/products');
 			}
 		});
 
@@ -39,9 +39,7 @@
 			{@render children()}
 		</main>
 	{:else}
-		<main
-			class="min-h-screen flex flex-col items-center justify-center p-4"
-		>
+		<main class="min-h-screen flex flex-col items-center justify-center p-4">
 			{@render children()}
 		</main>
 	{/if}

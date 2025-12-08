@@ -20,11 +20,17 @@
 <aside
     class="w-64 bg-slate-900 text-white flex flex-col h-screen fixed left-0 top-0 z-50 transition-all duration-300"
 >
-    <div class="p-6 border-b border-slate-800">
-        <h1 class="text-xl font-bold tracking-tight text-white">
-            Gemini Admin
+    <div class="p-6 border-b border-slate-800 flex flex-col items-center">
+        <img
+            src="/images/logo.png"
+            alt="Geminislabs Logo"
+            class="w-10 h-10 mb-3"
+        />
+        <h1
+            class="text-lg font-bold tracking-tight text-white text-center leading-tight"
+        >
+            Geminislabs Admin Console
         </h1>
-        <p class="text-xs text-slate-400 mt-1">Control Console</p>
     </div>
 
     <nav class="flex-1 p-4 space-y-1 overflow-y-auto">

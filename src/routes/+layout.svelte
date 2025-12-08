@@ -1,5 +1,5 @@
 <script>
-	import favicon from "$lib/assets/favicon.svg";
+	import favicon from "$lib/assets/favicon.png";
 	import "../app.css";
 	import { page } from "$app/stores";
 	import { onMount } from "svelte";
@@ -28,7 +28,11 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<div class="min-h-screen bg-slate-50 text-slate-900 font-sans">
+<div
+	class="min-h-screen font-sans {isLoginPage
+		? 'bg-transparent text-white'
+		: 'bg-slate-50 text-slate-900'}"
+>
 	{#if !isLoginPage}
 		<Sidebar />
 		<main class="pl-64 transition-all duration-300 min-h-screen">

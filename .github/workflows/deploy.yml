@@ -1,0 +1,134 @@
+name: Build and Deploy to EC2
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Build application
+        env:
+          PUBLIC_GAC_API_URL: ${{ vars.PUBLIC_GAC_API_URL }}
+          PUBLIC_SISCOM_ADMIN_API_URL: ${{ vars.PUBLIC_SISCOM_ADMIN_API_URL }}
+        run: npm run build
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image (Cache)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: gac-web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            PUBLIC_GAC_API_URL=${{ vars.PUBLIC_GAC_API_URL }}
+            PUBLIC_SISCOM_ADMIN_API_URL=${{ vars.PUBLIC_SISCOM_ADMIN_API_URL }}
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')
+    environment: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.EC2_SSH_KEY }}
+          name: id_rsa
+          known_hosts: unnecessary
+          if_key_exists: replace
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image for deployment
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: gac-web:latest
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            PUBLIC_GAC_API_URL=${{ vars.PUBLIC_GAC_API_URL }}
+            PUBLIC_SISCOM_ADMIN_API_URL=${{ vars.PUBLIC_SISCOM_ADMIN_API_URL }}
+
+      - name: Save Docker image
+        run: docker save gac-web:latest | gzip > gac-web.tar.gz
+
+      - name: Copy Docker image to EC2
+        run: |
+          echo "Copying Docker image to server..."
+          scp -o StrictHostKeyChecking=no -P ${{ secrets.EC2_SSH_PORT }} -i ~/.ssh/id_rsa gac-web.tar.gz ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/tmp/
+          echo "Copy completed."
+
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.EC2_SSH_PORT }} -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+          set -e
+
+          APP_NAME="gac-web"
+          PORT="${{ vars.PORT }}"
+          [ -z "$PORT" ] && PORT=3000
+
+          echo "=== Deploying $APP_NAME on port $PORT ==="
+
+          echo "=== Stopping previous container ==="
+          docker stop $APP_NAME || true
+          docker rm $APP_NAME || true
+
+          echo "=== Cleaning up ==="
+          docker image prune -f || true
+
+          echo "=== Loading new image ==="
+          cd /tmp
+          if [ -f gac-web.tar.gz ]; then
+              docker load < gac-web.tar.gz
+              rm gac-web.tar.gz
+          else
+              echo "Error: Image file not found"
+              exit 1
+          fi
+
+          echo "=== Starting new container ==="
+          docker run -d \
+              --name $APP_NAME \
+              --restart unless-stopped \
+              --network siscom-network \
+              -p $PORT:$PORT \
+              -e PORT=$PORT \
+              -e NODE_ENV=production \
+              -e ORIGIN=${{ secrets.ORIGIN }} \
+              gac-web:latest
+
+          echo "=== Deployment successful ==="
+          EOF

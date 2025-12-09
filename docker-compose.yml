@@ -1,0 +1,26 @@
+services:
+  gac-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gac-web:latest
+    container_name: gac-web
+    restart: unless-stopped
+    ports:
+      - '${PORT:-3000}:${PORT:-3000}'
+    environment:
+      - PORT=${PORT:-3000}
+      - NODE_ENV=production
+      # Add other necessary environment variables here, mapped from host env
+      - PUBLIC_GAC_API_URL
+      - PUBLIC_SISCOM_ADMIN_API_URL
+      - VITE_BYPASS_AUTH
+      - VITE_COMPANY_URL
+      - VITE_COMM_API_URL
+      - VITE_ADMIN_API_URL
+    networks:
+      - siscom-network
+
+networks:
+  siscom-network:
+    external: true

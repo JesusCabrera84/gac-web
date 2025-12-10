@@ -3,6 +3,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
+	import CommandPanel from '$lib/components/nexus/CommandPanel.svelte';
 	import { DevicesService } from '$lib/services/devices';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
@@ -10,6 +11,7 @@
 	let devices = $state([]);
 	let isLoading = $state(true);
 	let searchTerm = $state('');
+	let selectedDeviceId = $state(null);
 
 	onMount(async () => {
 		await loadDevices();
@@ -38,9 +40,17 @@
 			);
 		})
 	);
+
+	function handleRowClick(device) {
+		if (selectedDeviceId === device.device_id) {
+			selectedDeviceId = null; // Deselect if already selected
+		} else {
+			selectedDeviceId = device.device_id;
+		}
+	}
 </script>
 
-<div class="flex flex-col min-h-screen">
+<div class="flex flex-col min-h-screen pb-10">
 	<Topbar title="Nexus / Dispositivos">
 		<a href="/products/nexus/devices/create">
 			<Button variant="primary" size="sm">
@@ -104,8 +114,10 @@
 						{:else}
 							{#each filteredDevices as device (device.device_id)}
 								<tr
-									class="hover:bg-slate-50 transition-colors cursor-pointer"
-									onclick={async () => await goto(`/products/nexus/devices/${device.device_id}`)}
+									class="transition-colors cursor-pointer {selectedDeviceId === device.device_id
+										? 'bg-blue-50/50'
+										: 'hover:bg-slate-50'}"
+									onclick={() => handleRowClick(device)}
 								>
 									<td class="px-6 py-4 font-medium text-slate-900">
 										{device.device_id}
@@ -144,13 +156,21 @@
 									</td>
 									<td class="px-6 py-4 text-slate-600">
 										{device.client_id ? 'Asignado' : '-'}
-										<!-- Ideally fetch client name or show ID -->
 									</td>
 									<td class="px-6 py-4 text-slate-600">
 										{device.last_comm_at ? new Date(device.last_comm_at).toLocaleString() : '-'}
 									</td>
 									<td class="px-6 py-4 text-right">
-										<Button variant="ghost" size="sm">Editar</Button>
+										<Button
+											variant="ghost"
+											size="sm"
+											onclick={async (e) => {
+												e.stopPropagation();
+												await goto(`/products/nexus/devices/${device.device_id}`);
+											}}
+										>
+											Detalles
+										</Button>
 									</td>
 								</tr>
 							{/each}
@@ -159,5 +179,7 @@
 				</table>
 			</div>
 		</Card>
+
+		<CommandPanel deviceId={selectedDeviceId} />
 	</div>
 </div>

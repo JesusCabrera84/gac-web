@@ -28,8 +28,9 @@ export async function api(endpoint, options = {}) {
 		headers
 	};
 
-	// Ensure endpoint starts with /
-	const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+	// Ensure endpoint starts with / and remove trailing slash
+	const safeEndpoint = endpoint.replace(/\/$/, '');
+	const path = safeEndpoint.startsWith('/') ? safeEndpoint : `/${safeEndpoint}`;
 
 	// Remove trailing slash from base URL if present
 	const baseUrl = PUBLIC_GAC_API_URL.replace(/\/$/, '');

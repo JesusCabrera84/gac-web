@@ -37,8 +37,9 @@ export const DevicesService = {
 			headers
 		};
 
-		// Ensure endpoint starts with /
-		const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+		// Ensure endpoint starts with / and remove trailing slash
+		const safeEndpoint = endpoint.replace(/\/$/, '');
+		const path = safeEndpoint.startsWith('/') ? safeEndpoint : `/${safeEndpoint}`;
 
 		// Remove trailing slash from base URL if present
 		// Provide a fallback just in case the env var isn't set yet (though it should be)

@@ -33,7 +33,10 @@ export const CommandsService = {
 			headers
 		};
 
-		const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+		// Ensure endpoint starts with / and remove trailing slash
+		const safeEndpoint = endpoint.replace(/\/$/, '');
+		const path = safeEndpoint.startsWith('/') ? safeEndpoint : `/${safeEndpoint}`;
+
 		const baseUrl = (PUBLIC_SISCOM_ADMIN_API_URL || '').replace(/\/$/, '');
 		const url = `${baseUrl}${path}`;
 

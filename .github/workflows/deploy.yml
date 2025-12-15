@@ -29,6 +29,8 @@ jobs:
         env:
           PUBLIC_GAC_API_URL: ${{ vars.PUBLIC_GAC_API_URL }}
           PUBLIC_SISCOM_ADMIN_API_URL: ${{ vars.PUBLIC_SISCOM_ADMIN_API_URL }}
+          PUBLIC_SISCOM_API_URL: ${{ vars.PUBLIC_SISCOM_API_URL }}
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
         run: npm run build
 
       - name: Set up Docker Buildx
@@ -46,6 +48,8 @@ jobs:
           build-args: |
             PUBLIC_GAC_API_URL=${{ vars.PUBLIC_GAC_API_URL }}
             PUBLIC_SISCOM_ADMIN_API_URL=${{ vars.PUBLIC_SISCOM_ADMIN_API_URL }}
+            PUBLIC_SISCOM_API_URL=${{ vars.PUBLIC_SISCOM_API_URL }}
+            VITE_GOOGLE_MAPS_API_KEY=${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
 
   deploy:
     needs: build-and-test
@@ -81,6 +85,8 @@ jobs:
           build-args: |
             PUBLIC_GAC_API_URL=${{ vars.PUBLIC_GAC_API_URL }}
             PUBLIC_SISCOM_ADMIN_API_URL=${{ vars.PUBLIC_SISCOM_ADMIN_API_URL }}
+            PUBLIC_SISCOM_API_URL=${{ vars.PUBLIC_SISCOM_API_URL }}
+            VITE_GOOGLE_MAPS_API_KEY=${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
 
       - name: Save Docker image
         run: docker save gac-web:latest | gzip > gac-web.tar.gz

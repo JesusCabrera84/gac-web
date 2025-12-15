@@ -2,9 +2,10 @@
 	import Topbar from '$lib/components/layout/Topbar.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
+	// import Card from '$lib/components/ui/Card.svelte';
 	import CommandPanel from '$lib/components/nexus/CommandPanel.svelte';
 	import { DevicesService } from '$lib/services/devices';
+	import { TripsService } from '$lib/services/trips';
 	import { goto } from '$app/navigation';
 	import { onMount, onDestroy } from 'svelte';
 	// @ts-ignore
@@ -45,6 +46,31 @@
 			window.addEventListener('mouseup', stopResize);
 		}
 	});
+
+	onDestroy(() => {
+		if (typeof window !== 'undefined') {
+			window.removeEventListener('mousemove', handleResize);
+			window.removeEventListener('mouseup', stopResize);
+		}
+		cleanupStream();
+	});
+
+	function startResize() {
+		isDragging = true;
+		// Initialize resize if needed
+	}
+
+	function handleResize(event) {
+		if (!isDragging) return;
+		const newWidth = event.clientX - 300; // Offset for main sidebar
+		if (newWidth > 200 && newWidth < 600) {
+			sidebarWidth = newWidth;
+		}
+	}
+
+	function stopResize() {
+		isDragging = false;
+	}
 
 	// ... (rest of lifecycle/resize unchanged)
 
@@ -270,7 +296,7 @@
 			});
 			trips = response.trips || [];
 		} catch (error) {
-			// console.error('Error loading trips:', error);
+			console.error('Error loading trips:', error);
 			trips = [];
 		} finally {
 			isLoadingTrips = false;
@@ -593,7 +619,7 @@
 										</div>
 									{:else}
 										<div class="space-y-3">
-											{#each trips as trip}
+											{#each trips as trip (trip.id || trip.start_timestamp)}
 												<div
 													class="bg-white border border-slate-200 rounded-lg p-3 hover:border-blue-400 cursor-pointer transition-colors shadow-sm"
 												>
@@ -648,7 +674,7 @@
 													</tr>
 												</thead>
 												<tbody class="divide-y divide-slate-100">
-													{#each communications as comm}
+													{#each communications as comm (comm.gps_datetime || comm.received_at)}
 														<tr class="hover:bg-slate-50 transition-colors">
 															<td class="px-2 py-2 whitespace-nowrap text-slate-700 font-mono">
 																{new Date(comm.gps_datetime || comm.received_at).toLocaleTimeString(

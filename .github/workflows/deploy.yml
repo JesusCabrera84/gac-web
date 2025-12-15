@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [master, develop]
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -18,9 +22,12 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          registry-url: https://npm.pkg.github.com
 
       - name: Install dependencies
         run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
 
       - name: Run linter
         run: npm run lint
@@ -46,6 +53,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
+            NODE_AUTH_TOKEN=${{ github.token }}
             PUBLIC_GAC_API_URL=${{ vars.PUBLIC_GAC_API_URL }}
             PUBLIC_SISCOM_ADMIN_API_URL=${{ vars.PUBLIC_SISCOM_ADMIN_API_URL }}
             PUBLIC_SISCOM_API_URL=${{ vars.PUBLIC_SISCOM_API_URL }}
@@ -83,6 +91,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
+            NODE_AUTH_TOKEN=${{ github.token }}
             PUBLIC_GAC_API_URL=${{ vars.PUBLIC_GAC_API_URL }}
             PUBLIC_SISCOM_ADMIN_API_URL=${{ vars.PUBLIC_SISCOM_ADMIN_API_URL }}
             PUBLIC_SISCOM_API_URL=${{ vars.PUBLIC_SISCOM_API_URL }}

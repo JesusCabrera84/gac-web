@@ -4,7 +4,11 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
+ARG NODE_AUTH_TOKEN
+RUN echo "@jesusCabrera84:registry=https://npm.pkg.github.com" > .npmrc && \
+    echo "//npm.pkg.github.com/:_authToken=$NODE_AUTH_TOKEN" >> .npmrc
 RUN npm ci
+RUN rm -f .npmrc
 
 COPY . .
 # Pass build-time args if needed, but for now we rely on env vars at runtime or build args passed via compose/workflow

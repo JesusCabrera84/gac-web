@@ -208,6 +208,7 @@
 					online: true // Assume online if we just got data? Or check timestamp?
 				};
 
+				mapEngine.clearAllMarkers();
 				mapEngine.addVehicleMarker(vehicleData);
 
 				// Center map

@@ -14,6 +14,9 @@
 	let firmwareVersion = $state('');
 	let notes = $state('');
 	let iccid = $state('');
+	let carrier = $state('KORE');
+	let koreSimId = $state('');
+	let koreAccountId = $state('');
 	let status = $state('');
 	let clientId = $state('');
 
@@ -40,6 +43,14 @@
 			firmwareVersion = device.firmware_version || '';
 			notes = device.notes || '';
 			iccid = device.iccid || '';
+			carrier = device.carrier || 'KORE';
+			if (carrier === 'KORE' && device.sim_profile) {
+				koreSimId = device.sim_profile.kore_sim_id || '';
+				koreAccountId = device.sim_profile.kore_account_id || '';
+			} else {
+				koreSimId = '';
+				koreAccountId = '';
+			}
 			status = device.status || '';
 			clientId = device.client_id || '';
 		} catch (error) {
@@ -61,7 +72,15 @@
 			model,
 			firmware_version: firmwareVersion,
 			notes,
-			iccid: iccid || undefined
+			iccid: iccid || undefined,
+			carrier,
+			sim_profile:
+				carrier === 'KORE'
+					? {
+							kore_sim_id: koreSimId,
+							kore_account_id: koreAccountId
+						}
+					: undefined
 		};
 
 		try {
@@ -136,6 +155,44 @@
 
 						<div class="col-span-2">
 							<Input id="iccid" label="ICCID (SIM)" placeholder="89340..." bind:value={iccid} />
+						</div>
+
+						<div class="col-span-2 pt-4 border-t border-slate-200">
+							<h3 class="text-lg font-medium text-slate-800 mb-4">Carrier Profile</h3>
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+								<div class="col-span-2 md:col-span-1">
+									<label for="carrier" class="block text-sm font-medium text-slate-700 mb-1">
+										Carrier
+									</label>
+									<select
+										id="carrier"
+										bind:value={carrier}
+										class="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition-all duration-200"
+									>
+										<option value="KORE">Kore</option>
+										<option value="other">Other</option>
+									</select>
+								</div>
+
+								{#if carrier === 'KORE'}
+									<div class="col-span-2 md:col-span-1">
+										<Input
+											id="kore_sim_id"
+											label="Kore SIM ID"
+											placeholder="HS0ad..."
+											bind:value={koreSimId}
+										/>
+									</div>
+									<div class="col-span-2 md:col-span-1">
+										<Input
+											id="kore_account_id"
+											label="Kore Account ID"
+											placeholder="CO17..."
+											bind:value={koreAccountId}
+										/>
+									</div>
+								{/if}
+							</div>
 						</div>
 
 						<div class="col-span-2 space-y-2">

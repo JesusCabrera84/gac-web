@@ -293,7 +293,7 @@
 			const response = await TripsService.getTrips({
 				device_id: selectedDeviceId,
 				day: selectedDate,
-				tz: Intl.DateTimeFormat().resolvedOptions().timeZone
+				tz: 'America/Mexico_City'
 			});
 			trips = response.trips || [];
 		} catch (error) {

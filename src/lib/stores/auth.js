@@ -71,7 +71,7 @@ export const login = async (email, password) => {
 		auth.set({
 			token,
 			refreshToken,
-			user: userProfile,
+			user: userProfile.data || userProfile,
 			isAuthenticated: true
 		});
 

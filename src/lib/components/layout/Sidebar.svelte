@@ -3,7 +3,7 @@
 	import { auth, logout } from '$lib/stores/auth';
 
 	const menuItems = [
-		{ href: '/products', label: 'Dashboard', icon: 'LayoutDashboard' },
+		{ href: '/', label: 'Dashboard', icon: 'LayoutDashboard' },
 		{ href: '/products/nexus', label: 'Nexus', icon: 'Smartphone' },
 		{
 			href: '/admin/internal-users',
@@ -105,14 +105,14 @@
 			<div
 				class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white mr-3"
 			>
-				{$auth.user?.name?.charAt(0).toUpperCase() || 'U'}
+				{($auth.user?.name || $auth.user?.data?.name || 'U').charAt(0).toUpperCase()}
 			</div>
 			<div class="overflow-hidden">
 				<p class="text-sm font-medium text-white truncate">
-					{$auth.user?.name || 'User'}
+					{$auth.user?.name || $auth.user?.data?.name || 'User'}
 				</p>
 				<p class="text-xs text-slate-500 truncate">
-					{$auth.user?.email || 'email@example.com'}
+					{$auth.user?.email || $auth.user?.data?.email || 'email@example.com'}
 				</p>
 			</div>
 		</div>

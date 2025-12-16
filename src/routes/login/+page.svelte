@@ -31,7 +31,7 @@
 		try {
 			// Real login
 			await login(email, password);
-			await goto('/products');
+			await goto('/');
 		} catch (err) {
 			error = 'Error al iniciar sesión. Verifique sus credenciales.';
 			console.error(err);

@@ -367,14 +367,27 @@
 				include_points: true
 			});
 
-			if (tripDetails && tripDetails.points && tripReplay) {
-				const replayPoints = tripDetails.points.map((p) => ({
+			if (tripDetails && tripReplay) {
+				const points = (tripDetails.points || []).map((p) => ({
 					lat: p.lat,
 					lng: p.lon, // Engine uses lng
 					timestamp: new Date(p.timestamp),
 					speed: p.speed,
-					course: p.heading // bearing in engine usually
+					course: p.heading, // bearing in engine usually
+					itemType: 'status'
 				}));
+
+				const alerts = (tripDetails.alerts || []).map((a) => ({
+					lat: a.lat,
+					lng: a.lon, // Engine uses lng
+					timestamp: new Date(a.timestamp),
+					itemType: 'alert',
+					type: a.type
+				}));
+
+				const replayPoints = [...points, ...alerts].sort(
+					(a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+				);
 
 				// Load into engine
 				// v0.1.4: load(coordinates[])

@@ -8,6 +8,7 @@
 	import { TripsService } from '$lib/services/trips';
 	import { goto } from '$app/navigation';
 	import { onMount, onDestroy } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	// @ts-ignore
 	import { GoogleMapEngine, TripReplayController } from '@jesusCabrera84/map-engine';
 
@@ -37,7 +38,7 @@
 	// Communications data
 	let communications = $state([]);
 	let isLoadingCommunications = $state(false);
-	let hiddenColumns = $state(new Set());
+	let hiddenColumns = new SvelteSet();
 	let showColumnSelector = $state(false);
 
 	let allColumns = $derived(
@@ -45,10 +46,11 @@
 	);
 
 	function toggleColumn(col) {
-		const next = new Set(hiddenColumns);
-		if (next.has(col)) next.delete(col);
-		else next.add(col);
-		hiddenColumns = next;
+		if (hiddenColumns.has(col)) {
+			hiddenColumns.delete(col);
+		} else {
+			hiddenColumns.add(col);
+		}
 	}
 
 	// Map related state
@@ -466,7 +468,7 @@
 
 	<div class="flex flex-col flex-1 overflow-hidden">
 		<!-- Top Panel: Device List -->
-		<div class="h-1/2 flex flex-col border-b border-slate-200 bg-white">
+		<div class="h-[40%] flex flex-col border-b border-slate-200 bg-white">
 			<div class="p-4 border-b border-slate-100 flex justify-between items-center bg-white z-10">
 				<div class="w-full md:w-1/2">
 					<Input
@@ -486,13 +488,13 @@
 						class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 sticky top-0"
 					>
 						<tr>
-							<th class="px-6 py-4">ID Dispositivo</th>
-							<th class="px-6 py-4">ICCID</th>
-							<th class="px-6 py-4">Marca / Modelo</th>
-							<th class="px-6 py-4">Estatus</th>
-							<th class="px-6 py-4">Cliente</th>
-							<th class="px-6 py-4">Última Com.</th>
-							<th class="px-6 py-4 text-right">Acciones</th>
+							<th class="px-6 py-2">ID Dispositivo</th>
+							<th class="px-6 py-2">ICCID</th>
+							<th class="px-6 py-2">Marca / Modelo</th>
+							<th class="px-6 py-2">Estatus</th>
+							<th class="px-6 py-2">Cliente</th>
+							<th class="px-6 py-2">Última Com.</th>
+							<th class="px-6 py-2 text-right">Acciones</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-slate-100">
@@ -516,13 +518,13 @@
 										: 'hover:bg-slate-50'}"
 									onclick={() => handleRowClick(device)}
 								>
-									<td class="px-6 py-4 font-medium text-slate-900">
+									<td class="px-6 py-2 font-medium text-slate-900">
 										{device.device_id}
 									</td>
-									<td class="px-6 py-4 text-slate-600 font-mono text-xs">
+									<td class="px-6 py-2 text-slate-600 font-mono text-xs">
 										{device.iccid || '-'}
 									</td>
-									<td class="px-6 py-4 text-slate-600">
+									<td class="px-6 py-2 text-slate-600">
 										<div class="text-slate-900">
 											{device.brand}
 										</div>
@@ -530,7 +532,7 @@
 											{device.model}
 										</div>
 									</td>
-									<td class="px-6 py-4">
+									<td class="px-6 py-2">
 										<span
 											class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
 											class:bg-blue-100={device.status === 'nuevo'}
@@ -551,13 +553,13 @@
 											{device.status}
 										</span>
 									</td>
-									<td class="px-6 py-4 text-slate-600">
+									<td class="px-6 py-2 text-slate-600">
 										{device.client_id ? 'Asignado' : '-'}
 									</td>
-									<td class="px-6 py-4 text-slate-600">
+									<td class="px-6 py-2 text-slate-600">
 										{device.last_comm_at ? new Date(device.last_comm_at).toLocaleString() : '-'}
 									</td>
-									<td class="px-6 py-4 text-right">
+									<td class="px-6 py-2 text-right">
 										<Button
 											variant="ghost"
 											size="sm"
@@ -578,7 +580,7 @@
 		</div>
 
 		<!-- Bottom Panel: Tabs & Content -->
-		<div class="h-1/2 flex flex-col bg-slate-50">
+		<div class="flex-1 flex flex-col bg-slate-50">
 			{#if !selectedDeviceId}
 				<div class="flex flex-col items-center justify-center h-full text-slate-400">
 					<svg
@@ -830,7 +832,7 @@
 										{/if}
 									</div>
 								{:else if sidebarTab === 'history'}
-									<div class="flex-1 overflow-auto p-4 relative">
+									<div class="flex-1 flex flex-col overflow-hidden p-4 relative">
 										{#if isLoadingCommunications}
 											<div class="flex items-center justify-center py-8 text-slate-400">
 												<span class="loading loading-spinner loading-sm mr-2"></span> Cargando histórico...
@@ -868,7 +870,7 @@
 														class="absolute top-6 left-0 bg-white p-3 rounded-md border border-slate-200 shadow-xl z-50 w-64 max-h-60 overflow-y-auto"
 													>
 														<div class="flex flex-col gap-2">
-															{#each allColumns as col}
+															{#each allColumns as col (col)}
 																<label
 																	class="inline-flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-1 rounded"
 																>
@@ -890,13 +892,13 @@
 
 											<!-- Communications Table -->
 											{@const visibleColumns = allColumns.filter((c) => !hiddenColumns.has(c))}
-											<div class="h-full overflow-auto border rounded border-slate-200">
+											<div class="flex-1 overflow-auto border rounded border-slate-200 min-h-0">
 												<table class="w-full text-xs text-left">
 													<thead
 														class="text-slate-500 border-b border-slate-200 bg-slate-50 sticky top-0 z-10 shadow-sm"
 													>
 														<tr>
-															{#each visibleColumns as key}
+															{#each visibleColumns as key (key)}
 																<th
 																	class="px-2 py-2 font-medium whitespace-nowrap uppercase bg-slate-50 border-r border-slate-100 last:border-0"
 																	>{key}</th
@@ -905,13 +907,13 @@
 														</tr>
 													</thead>
 													<tbody class="divide-y divide-slate-100">
-														{#each communications as comm, i}
+														{#each communications as comm, i (comm.uuid || i)}
 															<tr
 																class="transition-colors {i % 2 === 0
 																	? 'bg-slate-50/50'
 																	: 'bg-white'} hover:bg-blue-50"
 															>
-																{#each visibleColumns as key}
+																{#each visibleColumns as key (key)}
 																	<td
 																		class="px-2 py-2 whitespace-nowrap text-slate-700 font-mono border-r border-slate-100 last:border-0"
 																	>

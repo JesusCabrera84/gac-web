@@ -9,7 +9,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount, onDestroy } from 'svelte';
 	// @ts-ignore
-	import { GoogleMapEngine } from '@jesusCabrera84/map-engine';
+	import { GoogleMapEngine, TripReplayController } from '@jesusCabrera84/map-engine';
 
 	let devices = $state([]);
 	let isLoading = $state(true);
@@ -27,6 +27,12 @@
 	// Trips data
 	let trips = $state([]);
 	let isLoadingTrips = $state(false);
+	// Trip Replay state
+	let selectedTripId = $state(null);
+	let isPlaying = $state(false);
+	let isPaused = $state(false);
+	/** @type {TripReplayController | null} */
+	let tripReplay = $state(null);
 
 	// Communications data
 	let communications = $state([]);
@@ -142,8 +148,13 @@
 				`
 			});
 
-			await mapEngine.mount(mapContainer);
+			const mapInstance = await mapEngine.mount(mapContainer);
 			console.log('Map Engine Mounted');
+
+			// Initialize Trip Replay Controller
+			// v0.1.4 requires (map, google)
+			// @ts-ignore
+			tripReplay = new TripReplayController(mapInstance, window.google);
 
 			// If we already have a selected device, load it
 			if (selectedDeviceId && activeTab === 'communications') {
@@ -338,6 +349,67 @@
 		} else {
 			selectedDeviceId = device.device_id;
 		}
+	}
+
+	async function selectTrip(trip) {
+		if (selectedTripId === trip.trip_id) return;
+		selectedTripId = trip.trip_id;
+		isPlaying = false;
+		isPaused = false;
+
+		// Stop any existing replay
+		if (tripReplay) tripReplay.stop();
+
+		try {
+			// Fetch full trip details
+			const tripDetails = await TripsService.getTripById(trip.trip_id, {
+				include_alerts: true,
+				include_points: true
+			});
+
+			if (tripDetails && tripDetails.points && tripReplay) {
+				const replayPoints = tripDetails.points.map((p) => ({
+					lat: p.lat,
+					lng: p.lon, // Engine uses lng
+					timestamp: new Date(p.timestamp),
+					speed: p.speed,
+					course: p.heading // bearing in engine usually
+				}));
+
+				// Load into engine
+				// v0.1.4: load(coordinates[])
+				tripReplay.load(replayPoints);
+			}
+		} catch (error) {
+			console.error('Error loading trip details:', error);
+		}
+	}
+
+	function togglePlay() {
+		if (!tripReplay) return;
+
+		if (isPlaying && !isPaused) {
+			// Pause
+			tripReplay.pause();
+			isPaused = true;
+		} else if (isPaused) {
+			// Resume
+			tripReplay.resume();
+			isPaused = false;
+			isPlaying = true;
+		} else {
+			// Start Play
+			tripReplay.play({ duration: 10000 });
+			isPlaying = true;
+			isPaused = false;
+		}
+	}
+
+	function stopReplay() {
+		if (!tripReplay) return;
+		tripReplay.stop();
+		isPlaying = false;
+		isPaused = false;
 	}
 </script>
 
@@ -619,23 +691,97 @@
 											No hay trayectos para esta fecha.
 										</div>
 									{:else}
+										<!-- Trip Controls -->
+										{#if selectedTripId}
+											<div class="flex items-center space-x-2 mb-4 px-1">
+												<Button
+													variant="secondary"
+													size="sm"
+													class="flex-1 flex items-center justify-center"
+													onclick={togglePlay}
+												>
+													{#if isPlaying && !isPaused}
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															width="16"
+															height="16"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															><rect x="6" y="4" width="4" height="16"></rect><rect
+																x="14"
+																y="4"
+																width="4"
+																height="16"
+															></rect></svg
+														>
+														<span class="ml-2">Pausa</span>
+													{:else}
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															width="16"
+															height="16"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															><polygon points="5 3 19 12 5 21 5 3"></polygon></svg
+														>
+														<span class="ml-2">{isPaused ? 'Reanudar' : 'Play'}</span>
+													{/if}
+												</Button>
+												<Button
+													variant="ghost"
+													size="sm"
+													class="flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50"
+													onclick={stopReplay}
+												>
+													<svg
+														xmlns="http://www.w3.org/2000/svg"
+														width="16"
+														height="16"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg
+													>
+												</Button>
+											</div>
+										{/if}
+
 										<div class="space-y-3">
-											{#each trips as trip (trip.id || trip.start_timestamp)}
+											{#each trips as trip (trip.trip_id)}
 												<div
-													class="bg-white border border-slate-200 rounded-lg p-3 hover:border-blue-400 cursor-pointer transition-colors shadow-sm"
+													class="bg-white border rounded-lg p-3 cursor-pointer transition-colors shadow-sm {selectedTripId ===
+													trip.trip_id
+														? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/20'
+														: 'border-slate-200 hover:border-blue-400'}"
+													onclick={() => selectTrip(trip)}
 												>
 													<div class="flex justify-between items-start mb-2">
 														<div class="flex items-center text-xs font-semibold text-slate-700">
 															<div class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2"></div>
-															{new Date(trip.start_timestamp).toLocaleTimeString([], {
+															{new Date(trip.start_timestamp).toLocaleTimeString('es-MX', {
 																hour: '2-digit',
-																minute: '2-digit'
+																minute: '2-digit',
+																second: '2-digit',
+																hour12: false
 															})}
 														</div>
 														<div class="flex items-center text-xs font-semibold text-slate-700">
-															{new Date(trip.end_timestamp).toLocaleTimeString([], {
+															{new Date(trip.end_timestamp).toLocaleTimeString('es-MX', {
 																hour: '2-digit',
-																minute: '2-digit'
+																minute: '2-digit',
+																second: '2-digit',
+																hour12: false
 															})}
 															<div class="w-1.5 h-1.5 rounded-full bg-slate-300 ml-2"></div>
 														</div>
@@ -644,8 +790,8 @@
 													<div
 														class="flex justify-between text-xs text-slate-500 border-t border-slate-50 pt-2 mt-2"
 													>
-														<span>{trip.distance_km.toFixed(1)} km</span>
-														<span>{Math.round(trip.duration_minutes)} min</span>
+														<span>{(trip.distance_km || 0).toFixed(1)} km</span>
+														<span>{Math.round(trip.duration_minutes || 0)} min</span>
 													</div>
 												</div>
 											{/each}

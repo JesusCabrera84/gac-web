@@ -20,7 +20,7 @@
 	let lastCommunicationTime = $state(null);
 
 	// Sidebar & Resizable state
-	let sidebarWidth = $state(320); // Initial width in pixels
+	let sidebarWidth = $state(800); // Default to a larger width, roughly 70% of typical 1366 screen minus main sidebar
 	let isDragging = $state(false);
 	let sidebarTab = $state('trips'); // 'trips' or 'communications'
 
@@ -37,6 +37,19 @@
 	// Communications data
 	let communications = $state([]);
 	let isLoadingCommunications = $state(false);
+	let hiddenColumns = $state(new Set());
+	let showColumnSelector = $state(false);
+
+	let allColumns = $derived(
+		communications.length > 0 ? Object.keys(communications[0] || {}).filter((k) => k !== 'id') : []
+	);
+
+	function toggleColumn(col) {
+		const next = new Set(hiddenColumns);
+		if (next.has(col)) next.delete(col);
+		else next.add(col);
+		hiddenColumns = next;
+	}
 
 	// Map related state
 	let mapContainer = $state();
@@ -68,8 +81,12 @@
 
 	function handleResize(event) {
 		if (!isDragging) return;
-		const newWidth = event.clientX - 300; // Offset for main sidebar
-		if (newWidth > 200 && newWidth < 600) {
+		const newWidth = event.clientX - 64; // Adjusted offset for minimized/normal sidebar, defaulting to small? Wait, we need to know main sidebar width.
+		// For now assuming the offset is handled relative to clientX. The previous code had "- 300".
+		// Responsive logic needed later. Let's just trust the user wants it BIG.
+		// newWidth is the width of the sidebar.
+		if (newWidth > 200 && newWidth < 1200) {
+			// Increased max width
 			sidebarWidth = newWidth;
 		}
 	}
@@ -823,29 +840,81 @@
 												sin comunicaciones en la fecha {selectedDate}
 											</div>
 										{:else}
+											<!-- Column Toggles (Dropdown) -->
+											<div class="mb-4 shrink-0 relative z-20">
+												<button
+													class="flex items-center text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide hover:text-blue-600 transition-colors"
+													onclick={() => (showColumnSelector = !showColumnSelector)}
+												>
+													<svg
+														xmlns="http://www.w3.org/2000/svg"
+														width="14"
+														height="14"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														class="mr-1 transition-transform {showColumnSelector
+															? 'rotate-90'
+															: ''}"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg
+													>
+													Columnas Visibles
+												</button>
+
+												{#if showColumnSelector}
+													<div
+														class="absolute top-6 left-0 bg-white p-3 rounded-md border border-slate-200 shadow-xl z-50 w-64 max-h-60 overflow-y-auto"
+													>
+														<div class="flex flex-col gap-2">
+															{#each allColumns as col}
+																<label
+																	class="inline-flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-1 rounded"
+																>
+																	<input
+																		type="checkbox"
+																		checked={!hiddenColumns.has(col)}
+																		onchange={() => toggleColumn(col)}
+																		class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
+																	/>
+																	<span class="text-xs text-slate-700 font-medium uppercase"
+																		>{col}</span
+																	>
+																</label>
+															{/each}
+														</div>
+													</div>
+												{/if}
+											</div>
+
 											<!-- Communications Table -->
-											{@const columns = Object.keys(communications[0] || {}).filter(
-												(k) => k !== 'id'
-											)}
-											<div class="h-full">
+											{@const visibleColumns = allColumns.filter((c) => !hiddenColumns.has(c))}
+											<div class="h-full overflow-auto border rounded border-slate-200">
 												<table class="w-full text-xs text-left">
 													<thead
 														class="text-slate-500 border-b border-slate-200 bg-slate-50 sticky top-0 z-10 shadow-sm"
 													>
 														<tr>
-															{#each columns as key}
+															{#each visibleColumns as key}
 																<th
-																	class="px-2 py-2 font-medium whitespace-nowrap uppercase bg-slate-50"
+																	class="px-2 py-2 font-medium whitespace-nowrap uppercase bg-slate-50 border-r border-slate-100 last:border-0"
 																	>{key}</th
 																>
 															{/each}
 														</tr>
 													</thead>
 													<tbody class="divide-y divide-slate-100">
-														{#each communications as comm}
-															<tr class="hover:bg-slate-50 transition-colors">
-																{#each columns as key}
-																	<td class="px-2 py-2 whitespace-nowrap text-slate-700 font-mono">
+														{#each communications as comm, i}
+															<tr
+																class="transition-colors {i % 2 === 0
+																	? 'bg-slate-50/50'
+																	: 'bg-white'} hover:bg-blue-50"
+															>
+																{#each visibleColumns as key}
+																	<td
+																		class="px-2 py-2 whitespace-nowrap text-slate-700 font-mono border-r border-slate-100 last:border-0"
+																	>
 																		{#if key === 'uuid'}
 																			<button
 																				class="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"

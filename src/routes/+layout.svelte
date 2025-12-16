@@ -10,6 +10,7 @@
 	let { children } = $props();
 
 	let isLoginPage = $derived($page.url.pathname === '/login');
+	let isSidebarCollapsed = $state(false);
 
 	onMount(() => {
 		const unsubscribe = auth.subscribe(async (state) => {
@@ -34,8 +35,8 @@
 		: 'bg-slate-50 text-slate-900'}"
 >
 	{#if !isLoginPage}
-		<Sidebar />
-		<main class="pl-64 transition-all duration-300 min-h-screen">
+		<Sidebar bind:isCollapsed={isSidebarCollapsed} />
+		<main class="transition-all duration-300 min-h-screen {isSidebarCollapsed ? 'pl-20' : 'pl-64'}">
 			{@render children()}
 		</main>
 	{:else}

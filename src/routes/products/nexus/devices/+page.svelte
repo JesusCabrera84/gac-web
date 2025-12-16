@@ -693,170 +693,196 @@
 							</div>
 
 							<!-- Sidebar Content (Scrollable) -->
-							<div class="flex-1 overflow-y-auto p-4">
+							<div class="flex-1 overflow-hidden flex flex-col">
 								{#if sidebarTab === 'trips'}
-									{#if isLoadingTrips}
-										<div class="flex items-center justify-center py-8 text-slate-400">
-											<span class="loading loading-spinner loading-sm mr-2"></span> Cargando trayectos...
-										</div>
-									{:else if trips.length === 0}
-										<div class="text-center py-8 text-slate-400 text-sm">
-											No hay trayectos para esta fecha.
-										</div>
-									{:else}
-										<!-- Trip Controls -->
-										{#if selectedTripId}
-											<div class="flex items-center space-x-2 mb-4 px-1">
-												<Button
-													variant="secondary"
-													size="sm"
-													class="flex-1 flex items-center justify-center"
-													onclick={togglePlay}
-												>
-													{#if isPlaying && !isPaused}
-														<svg
-															xmlns="http://www.w3.org/2000/svg"
-															width="16"
-															height="16"
-															viewBox="0 0 24 24"
-															fill="none"
-															stroke="currentColor"
-															stroke-width="2"
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															><rect x="6" y="4" width="4" height="16"></rect><rect
-																x="14"
-																y="4"
-																width="4"
-																height="16"
-															></rect></svg
-														>
-														<span class="ml-2">Pausa</span>
-													{:else}
-														<svg
-															xmlns="http://www.w3.org/2000/svg"
-															width="16"
-															height="16"
-															viewBox="0 0 24 24"
-															fill="none"
-															stroke="currentColor"
-															stroke-width="2"
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															><polygon points="5 3 19 12 5 21 5 3"></polygon></svg
-														>
-														<span class="ml-2">{isPaused ? 'Reanudar' : 'Play'}</span>
-													{/if}
-												</Button>
-												<Button
-													variant="ghost"
-													size="sm"
-													class="flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50"
-													onclick={stopReplay}
-												>
-													<svg
-														xmlns="http://www.w3.org/2000/svg"
-														width="16"
-														height="16"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="2"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg
+									<div class="flex-1 overflow-y-auto p-4">
+										{#if isLoadingTrips}
+											<div class="flex items-center justify-center py-8 text-slate-400">
+												<span class="loading loading-spinner loading-sm mr-2"></span> Cargando trayectos...
+											</div>
+										{:else if trips.length === 0}
+											<div class="text-center py-8 text-slate-400 text-sm">
+												No hay trayectos para esta fecha.
+											</div>
+										{:else}
+											<!-- Trip Controls -->
+											{#if selectedTripId}
+												<div class="flex items-center space-x-2 mb-4 px-1">
+													<Button
+														variant="secondary"
+														size="sm"
+														class="flex-1 flex items-center justify-center"
+														onclick={togglePlay}
 													>
-												</Button>
+														{#if isPlaying && !isPaused}
+															<svg
+																xmlns="http://www.w3.org/2000/svg"
+																width="16"
+																height="16"
+																viewBox="0 0 24 24"
+																fill="none"
+																stroke="currentColor"
+																stroke-width="2"
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																><rect x="6" y="4" width="4" height="16"></rect><rect
+																	x="14"
+																	y="4"
+																	width="4"
+																	height="16"
+																></rect></svg
+															>
+															<span class="ml-2">Pausa</span>
+														{:else}
+															<svg
+																xmlns="http://www.w3.org/2000/svg"
+																width="16"
+																height="16"
+																viewBox="0 0 24 24"
+																fill="none"
+																stroke="currentColor"
+																stroke-width="2"
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																><polygon points="5 3 19 12 5 21 5 3"></polygon></svg
+															>
+															<span class="ml-2">{isPaused ? 'Reanudar' : 'Play'}</span>
+														{/if}
+													</Button>
+													<Button
+														variant="ghost"
+														size="sm"
+														class="flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50"
+														onclick={stopReplay}
+													>
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															width="16"
+															height="16"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg
+														>
+													</Button>
+												</div>
+											{/if}
+
+											<div class="space-y-3">
+												{#each trips as trip (trip.trip_id)}
+													<div
+														class="bg-white border rounded-lg p-3 cursor-pointer transition-colors shadow-sm {selectedTripId ===
+														trip.trip_id
+															? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/20'
+															: 'border-slate-200 hover:border-blue-400'}"
+														onclick={() => selectTrip(trip)}
+													>
+														<div class="flex justify-between items-start mb-2">
+															<div class="flex items-center text-xs font-semibold text-slate-700">
+																<div class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2"></div>
+																{new Date(trip.start_timestamp).toLocaleTimeString('es-MX', {
+																	hour: '2-digit',
+																	minute: '2-digit',
+																	second: '2-digit',
+																	hour12: false
+																})}
+															</div>
+															<div class="flex items-center text-xs font-semibold text-slate-700">
+																{new Date(trip.end_timestamp).toLocaleTimeString('es-MX', {
+																	hour: '2-digit',
+																	minute: '2-digit',
+																	second: '2-digit',
+																	hour12: false
+																})}
+																<div class="w-1.5 h-1.5 rounded-full bg-slate-300 ml-2"></div>
+															</div>
+														</div>
+
+														<div
+															class="flex justify-between text-xs text-slate-500 border-t border-slate-50 pt-2 mt-2"
+														>
+															<span>{(trip.distance_km || 0).toFixed(1)} km</span>
+															<span>{Math.round(trip.duration_minutes || 0)} min</span>
+														</div>
+													</div>
+												{/each}
 											</div>
 										{/if}
-
-										<div class="space-y-3">
-											{#each trips as trip (trip.trip_id)}
-												<div
-													class="bg-white border rounded-lg p-3 cursor-pointer transition-colors shadow-sm {selectedTripId ===
-													trip.trip_id
-														? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/20'
-														: 'border-slate-200 hover:border-blue-400'}"
-													onclick={() => selectTrip(trip)}
-												>
-													<div class="flex justify-between items-start mb-2">
-														<div class="flex items-center text-xs font-semibold text-slate-700">
-															<div class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2"></div>
-															{new Date(trip.start_timestamp).toLocaleTimeString('es-MX', {
-																hour: '2-digit',
-																minute: '2-digit',
-																second: '2-digit',
-																hour12: false
-															})}
-														</div>
-														<div class="flex items-center text-xs font-semibold text-slate-700">
-															{new Date(trip.end_timestamp).toLocaleTimeString('es-MX', {
-																hour: '2-digit',
-																minute: '2-digit',
-																second: '2-digit',
-																hour12: false
-															})}
-															<div class="w-1.5 h-1.5 rounded-full bg-slate-300 ml-2"></div>
-														</div>
-													</div>
-
-													<div
-														class="flex justify-between text-xs text-slate-500 border-t border-slate-50 pt-2 mt-2"
-													>
-														<span>{(trip.distance_km || 0).toFixed(1)} km</span>
-														<span>{Math.round(trip.duration_minutes || 0)} min</span>
-													</div>
-												</div>
-											{/each}
-										</div>
-									{/if}
+									</div>
 								{:else if sidebarTab === 'history'}
-									{#if isLoadingCommunications}
-										<div class="flex items-center justify-center py-8 text-slate-400">
-											<span class="loading loading-spinner loading-sm mr-2"></span> Cargando histórico...
-										</div>
-									{:else if communications.length === 0}
-										<div class="text-center py-8 text-slate-400 text-sm">
-											sin comunicaciones en la fecha {selectedDate}
-										</div>
-									{:else}
-										<!-- Communications Table -->
-										<div class="overflow-x-auto">
-											<table class="w-full text-xs text-left">
-												<thead
-													class="text-slate-500 border-b border-slate-200 bg-slate-50 sticky top-0"
-												>
-													<tr>
-														<th class="px-2 py-2 font-medium">Hora</th>
-														<th class="px-2 py-2 font-medium">Vel (km/h)</th>
-														<th class="px-2 py-2 font-medium">Odo (km)</th>
-														<th class="px-2 py-2 font-medium">Evento</th>
-													</tr>
-												</thead>
-												<tbody class="divide-y divide-slate-100">
-													{#each communications as comm (comm.gps_datetime || comm.received_at)}
-														<tr class="hover:bg-slate-50 transition-colors">
-															<td class="px-2 py-2 whitespace-nowrap text-slate-700 font-mono">
-																{new Date(comm.gps_datetime || comm.received_at).toLocaleTimeString(
-																	[],
-																	{ hour: '2-digit', minute: '2-digit', second: '2-digit' }
-																)}
-															</td>
-															<td class="px-2 py-2 text-slate-600">
-																{comm.speed?.toFixed(0)}
-															</td>
-															<td class="px-2 py-2 text-slate-600">
-																{(comm.total_distance / 1000).toFixed(1)}
-															</td>
-															<td class="px-2 py-2 text-slate-500 text-[10px]">
-																{comm.alert_type || '-'}
-															</td>
+									<div class="flex-1 overflow-auto p-4 relative">
+										{#if isLoadingCommunications}
+											<div class="flex items-center justify-center py-8 text-slate-400">
+												<span class="loading loading-spinner loading-sm mr-2"></span> Cargando histórico...
+											</div>
+										{:else if communications.length === 0}
+											<div class="text-center py-8 text-slate-400 text-sm">
+												sin comunicaciones en la fecha {selectedDate}
+											</div>
+										{:else}
+											<!-- Communications Table -->
+											{@const columns = Object.keys(communications[0] || {}).filter(
+												(k) => k !== 'id'
+											)}
+											<div class="h-full">
+												<table class="w-full text-xs text-left">
+													<thead
+														class="text-slate-500 border-b border-slate-200 bg-slate-50 sticky top-0 z-10 shadow-sm"
+													>
+														<tr>
+															{#each columns as key}
+																<th
+																	class="px-2 py-2 font-medium whitespace-nowrap uppercase bg-slate-50"
+																	>{key}</th
+																>
+															{/each}
 														</tr>
-													{/each}
-												</tbody>
-											</table>
-										</div>
-									{/if}
+													</thead>
+													<tbody class="divide-y divide-slate-100">
+														{#each communications as comm}
+															<tr class="hover:bg-slate-50 transition-colors">
+																{#each columns as key}
+																	<td class="px-2 py-2 whitespace-nowrap text-slate-700 font-mono">
+																		{#if key === 'uuid'}
+																			<button
+																				class="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+																				title="Copiar UUID"
+																				onclick={(e) => {
+																					e.stopPropagation();
+																					navigator.clipboard.writeText(comm.uuid);
+																				}}
+																			>
+																				<svg
+																					xmlns="http://www.w3.org/2000/svg"
+																					width="14"
+																					height="14"
+																					viewBox="0 0 24 24"
+																					fill="none"
+																					stroke="currentColor"
+																					stroke-width="2"
+																					stroke-linecap="round"
+																					stroke-linejoin="round"
+																					><rect x="9" y="9" width="13" height="13" rx="2" ry="2"
+																					></rect><path
+																						d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+																					></path></svg
+																				>
+																			</button>
+																		{:else}
+																			{comm[key] ?? ''}
+																		{/if}
+																	</td>
+																{/each}
+															</tr>
+														{/each}
+													</tbody>
+												</table>
+											</div>
+										{/if}
+									</div>
 								{/if}
 							</div>
 						</div>

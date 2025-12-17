@@ -4,6 +4,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import { DevicesService } from '$lib/services/devices';
+	import { ClientsService } from '$lib/services/clients';
 	import { onMount } from 'svelte';
 
 	let clients = $state([]);
@@ -12,7 +13,7 @@
 
 	// Counters
 	let deviceCount = $state(0);
-	let clientCount = 0;
+	let clientCount = $state(0);
 
 	// Filtered clients (empty for now)
 	let filteredClients = $derived(
@@ -21,10 +22,39 @@
 
 	onMount(async () => {
 		try {
-			const devices = await DevicesService.getAll();
+			// Fetch devices, clients, and stats in parallel
+			const [devicesData, clientsData, statsData] = await Promise.all([
+				DevicesService.getAll(),
+				ClientsService.getAll({ limit: 100 }),
+				ClientsService.getStats()
+			]);
+
+			const devices = devicesData || [];
+			// @ts-ignore
+			const fetchedClients = clientsData || [];
+			// @ts-ignore
+			const stats = statsData || { total: 0 };
+
 			deviceCount = devices.length;
+			clientCount = stats.total;
+
+			// Map devices to clients to count them
+			const deviceCounts = devices.reduce((acc, device) => {
+				if (device.client_id) {
+					acc[device.client_id] = (acc[device.client_id] || 0) + 1;
+				}
+				return acc;
+			}, {});
+
+			// Format clients for display
+			clients = fetchedClients.map((client) => ({
+				...client,
+				deviceCount: deviceCounts[client.id] || 0,
+				formattedCreated: new Date(client.created_at).toLocaleDateString(),
+				formattedUpdated: new Date(client.updated_at).toLocaleDateString()
+			}));
 		} catch (error) {
-			console.error('Error fetching device count:', error);
+			console.error('Error fetching dashboard data:', error);
 		}
 	});
 </script>
@@ -121,20 +151,21 @@
 							<th class="px-6 py-4">Nombre</th>
 							<th class="px-6 py-4">Estatus</th>
 							<th class="px-6 py-4">Creado</th>
-							<th class="px-6 py-4">Suscripción</th>
+							<th class="px-6 py-4">Actualizado</th>
+							<th class="px-6 py-4 text-center">Dispositivos</th>
 							<th class="px-6 py-4 text-right">Acciones</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-slate-100">
 						{#if isLoading}
 							<tr>
-								<td colspan="5" class="px-6 py-8 text-center text-slate-500">
+								<td colspan="6" class="px-6 py-8 text-center text-slate-500">
 									Cargando clientes...
 								</td>
 							</tr>
 						{:else if filteredClients.length === 0}
 							<tr>
-								<td colspan="5" class="px-6 py-8 text-center text-slate-500">
+								<td colspan="6" class="px-6 py-8 text-center text-slate-500">
 									No se encontraron clientes.
 								</td>
 							</tr>
@@ -147,13 +178,29 @@
 									<td class="px-6 py-4 font-medium text-slate-900">{client.name}</td>
 									<td class="px-6 py-4">
 										<span
-											class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800"
+											class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+												${
+													client.status === 'ACTIVE'
+														? 'bg-green-100 text-green-800'
+														: client.status === 'PENDING'
+															? 'bg-yellow-100 text-yellow-800'
+															: client.status === 'SUSPENDED'
+																? 'bg-red-100 text-red-800'
+																: 'bg-slate-100 text-slate-800'
+												}`}
 										>
 											{client.status}
 										</span>
 									</td>
-									<td class="px-6 py-4 text-slate-600">{client.created_at}</td>
-									<td class="px-6 py-4 text-slate-600">{client.subscription}</td>
+									<td class="px-6 py-4 text-slate-600">{client.formattedCreated}</td>
+									<td class="px-6 py-4 text-slate-600">{client.formattedUpdated}</td>
+									<td class="px-6 py-4 text-center">
+										<span
+											class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
+										>
+											{client.deviceCount}
+										</span>
+									</td>
 									<td class="px-6 py-4 text-right">
 										<Button variant="ghost" size="sm">Ver Detalle</Button>
 									</td>

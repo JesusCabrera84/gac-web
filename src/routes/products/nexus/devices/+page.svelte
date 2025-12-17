@@ -61,7 +61,19 @@
 	let socket = $state(null);
 
 	onMount(async () => {
+		const urlParams = new URLSearchParams(window.location.search);
+		const deviceIdParam = urlParams.get('device_id');
+
 		await loadDevices();
+
+		if (deviceIdParam) {
+			// Ensure the device exists in our list before selecting
+			const deviceExists = devices.some((d) => d.device_id === deviceIdParam);
+			if (deviceExists) {
+				selectedDeviceId = deviceIdParam;
+			}
+		}
+
 		if (typeof window !== 'undefined') {
 			window.addEventListener('mousemove', handleResize);
 			window.addEventListener('mouseup', stopResize);
@@ -417,7 +429,7 @@
 		}
 	}
 
-	function togglePlay() {
+	async function togglePlay() {
 		if (!tripReplay) return;
 
 		if (isPlaying && !isPaused) {
@@ -431,9 +443,21 @@
 			isPlaying = true;
 		} else {
 			// Start Play
-			tripReplay.play({ duration: 10000 });
 			isPlaying = true;
 			isPaused = false;
+			try {
+				await tripReplay.play({ duration: 10000 });
+				// Only reset if we finished naturally (not stopped/paused via other means if the promise rejects or resolves early)
+				// Assuming promise resolves on completion.
+				if (isPlaying && !isPaused) {
+					isPlaying = false;
+					isPaused = false;
+				}
+			} catch (e) {
+				console.error('Replay error or interrupted:', e);
+				// If interrupted, we might want to keep state or reset depending on error.
+				// For now, let's assume valid completion or explicit stop handle state.
+			}
 		}
 	}
 
@@ -446,7 +470,7 @@
 </script>
 
 <div class="flex flex-col h-screen overflow-hidden bg-slate-50">
-	<Topbar title="Nexus / Dispositivos">
+	<Topbar title="Nexus / Dispositivos" backUrl="/products/nexus">
 		<a href="/products/nexus/devices/create">
 			<Button variant="primary" size="sm">
 				<svg
@@ -559,12 +583,11 @@
 									<td class="px-6 py-2 text-slate-600">
 										{device.last_comm_at ? new Date(device.last_comm_at).toLocaleString() : '-'}
 									</td>
-									<td class="px-6 py-2 text-right">
+									<td class="px-6 py-2 text-right"> </td><td class="px-6 py-2 text-right">
 										<Button
 											variant="ghost"
 											size="sm"
-											onclick={async (e) => {
-												e.stopPropagation();
+											onclick={async () => {
 												await goto(`/products/nexus/devices/${device.device_id}`);
 											}}
 										>
@@ -606,21 +629,21 @@
 				</div>
 			{:else}
 				<!-- Tabs Header -->
-				<div class="flex border-b border-slate-200 bg-white">
+				<div class="flex border-b border-slate-200 bg-slate-100 border-t-4 border-slate-200/50">
 					<button
-						class="flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors {activeTab ===
+						class="flex-1 px-4 py-3 text-sm font-bold transition-all duration-200 {activeTab ===
 						'commands'
-							? 'border-blue-500 text-blue-600'
-							: 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}"
+							? 'bg-white text-blue-600 shadow-[inset_0_2px_0_0_#3b82f6]'
+							: 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200 shadow-[inset_0_2px_0_0_transparent]'}"
 						onclick={() => (activeTab = 'commands')}
 					>
 						Comandos
 					</button>
 					<button
-						class="flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors {activeTab ===
+						class="flex-1 px-4 py-3 text-sm font-bold transition-all duration-200 border-l border-slate-200 {activeTab ===
 						'communications'
-							? 'border-blue-500 text-blue-600'
-							: 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}"
+							? 'bg-white text-blue-600 shadow-[inset_0_2px_0_0_#3b82f6]'
+							: 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200 shadow-[inset_0_2px_0_0_transparent]'}"
 						onclick={() => (activeTab = 'communications')}
 					>
 						Comunicaciones
@@ -711,9 +734,84 @@
 								</div>
 							</div>
 
-							<!-- Sidebar Content (Scrollable) -->
-							<div class="flex-1 overflow-hidden flex flex-col">
+							<!-- Sidebar Content (Scrollable Container Wrapper) -->
+							<div class="flex-1 overflow-hidden flex flex-col relative">
 								{#if sidebarTab === 'trips'}
+									<!-- Fixed Controls Header -->
+									{#if selectedTripId}
+										<div class="shrink-0 p-3 bg-slate-50 border-b border-slate-200 z-10">
+											<div
+												class="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200 shadow-sm"
+											>
+												<p class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">
+													Controles
+												</p>
+												<div class="flex items-center space-x-2">
+													<button
+														class="flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 {isPlaying &&
+														!isPaused
+															? 'bg-amber-100 text-amber-600 hover:bg-amber-200'
+															: 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200'}"
+														onclick={togglePlay}
+														title={isPlaying && !isPaused ? 'Pausar' : 'Reproducir'}
+													>
+														{#if isPlaying && !isPaused}
+															<svg
+																xmlns="http://www.w3.org/2000/svg"
+																width="14"
+																height="14"
+																viewBox="0 0 24 24"
+																fill="none"
+																stroke="currentColor"
+																stroke-width="2.5"
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																><rect x="6" y="4" width="4" height="16"></rect><rect
+																	x="14"
+																	y="4"
+																	width="4"
+																	height="16"
+																></rect></svg
+															>
+														{:else}
+															<svg
+																xmlns="http://www.w3.org/2000/svg"
+																width="14"
+																height="14"
+																viewBox="0 0 24 24"
+																fill="none"
+																stroke="currentColor"
+																stroke-width="2.5"
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																class="ml-0.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg
+															>
+														{/if}
+													</button>
+
+													<button
+														class="flex items-center justify-center w-8 h-8 rounded-full bg-white text-slate-500 border border-slate-200 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500"
+														onclick={stopReplay}
+														title="Detener"
+													>
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															width="14"
+															height="14"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2.5"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg
+														>
+													</button>
+												</div>
+											</div>
+										</div>
+									{/if}
+
 									<div class="flex-1 overflow-y-auto p-4">
 										{#if isLoadingTrips}
 											<div class="flex items-center justify-center py-8 text-slate-400">
@@ -724,72 +822,6 @@
 												No hay trayectos para esta fecha.
 											</div>
 										{:else}
-											<!-- Trip Controls -->
-											{#if selectedTripId}
-												<div class="flex items-center space-x-2 mb-4 px-1">
-													<Button
-														variant="secondary"
-														size="sm"
-														class="flex-1 flex items-center justify-center"
-														onclick={togglePlay}
-													>
-														{#if isPlaying && !isPaused}
-															<svg
-																xmlns="http://www.w3.org/2000/svg"
-																width="16"
-																height="16"
-																viewBox="0 0 24 24"
-																fill="none"
-																stroke="currentColor"
-																stroke-width="2"
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																><rect x="6" y="4" width="4" height="16"></rect><rect
-																	x="14"
-																	y="4"
-																	width="4"
-																	height="16"
-																></rect></svg
-															>
-															<span class="ml-2">Pausa</span>
-														{:else}
-															<svg
-																xmlns="http://www.w3.org/2000/svg"
-																width="16"
-																height="16"
-																viewBox="0 0 24 24"
-																fill="none"
-																stroke="currentColor"
-																stroke-width="2"
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																><polygon points="5 3 19 12 5 21 5 3"></polygon></svg
-															>
-															<span class="ml-2">{isPaused ? 'Reanudar' : 'Play'}</span>
-														{/if}
-													</Button>
-													<Button
-														variant="ghost"
-														size="sm"
-														class="flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50"
-														onclick={stopReplay}
-													>
-														<svg
-															xmlns="http://www.w3.org/2000/svg"
-															width="16"
-															height="16"
-															viewBox="0 0 24 24"
-															fill="none"
-															stroke="currentColor"
-															stroke-width="2"
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg
-														>
-													</Button>
-												</div>
-											{/if}
-
 											<div class="space-y-3">
 												{#each trips as trip (trip.trip_id)}
 													<div

@@ -26,7 +26,9 @@
 	let successMessage = $state('');
 
 	onMount(async () => {
-		const id = $page.params.id;
+		/** @type {{id: string}} */
+		const params = $page.params;
+		const id = params.id;
 		if (id) {
 			await loadDevice(id);
 		}
@@ -96,7 +98,7 @@
 </script>
 
 <div class="flex flex-col min-h-screen">
-	<Topbar title={`Nexus / Dispositivo ${deviceId || '...'}`} />
+	<Topbar title={`Nexus / Dispositivo ${deviceId || '...'}`} backUrl="/products/nexus/devices" />
 
 	<div class="p-8 max-w-2xl mx-auto w-full">
 		<Card class="p-8">

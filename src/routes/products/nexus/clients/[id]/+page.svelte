@@ -3,18 +3,54 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 
-	// let clientId = $page.params.id;
+	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
+	import { ClientsService } from '$lib/services/clients';
+	import { DevicesService } from '$lib/services/devices';
+	import { goto } from '$app/navigation';
 
-	// Placeholder data
-	let client = {
-		name: 'Cliente Ejemplo',
-		status: 'Activo',
-		created_at: '2023-01-01',
-		subscription: 'Premium'
-	};
+	let clientId = $derived($page.params.id);
 
-	let devices = []; // device_id, brand, model
-	let units = []; // name, plate, brand, model, device
+	/** @type {any} */
+	let client = $state({});
+	let devices = $state([]);
+	let units = $state([]);
+	let isLoading = $state(true);
+
+	// Fetch data on mount
+	onMount(async () => {
+		try {
+			if (!clientId) return;
+
+			const [clientData, devicesData] = await Promise.all([
+				ClientsService.getById(clientId),
+				DevicesService.getAll() // We have to filter safely. Ideally endpoint supports filtering by client_id
+			]);
+
+			client = clientData;
+			// Filter devices for this client.
+			// Note: The internal API might not return client_id if we fetch all devices as admin without filter.
+			// DevicesService.getAll() uses /api/v1/devices/ (admin).
+			// Assuming devices have client_id.
+			// Ideally we use a filtered fetch: DevicesService.getAll({client_id: clientId}) if supported.
+			// Let's assume we filter client-side if API doesn't support filter, but passing filter is safer.
+			// devices = devicesData.filter(d => d.client_id === clientId);
+
+			// Let's try to fetch scoped devices if possible or filter.
+			// DevicesService.getAll accepts filters.
+			const clientDevices = await DevicesService.getAll({ client_id: clientId });
+			devices = clientDevices || [];
+
+			// Format dates
+			if (client.created_at) {
+				client.formattedCreated = new Date(client.created_at).toLocaleDateString();
+			}
+		} catch (error) {
+			console.error('Error fetching client details:', error);
+		} finally {
+			isLoading = false;
+		}
+	});
 
 	// Placeholder function to add device
 	function handleAddDevice() {
@@ -23,7 +59,10 @@
 </script>
 
 <div class="flex flex-col min-h-screen">
-	<Topbar title={`Nexus / Clientes / ${client.name}`} />
+	<Topbar
+		title={isLoading ? 'Cargando...' : `Nexus / Clientes / ${client?.name || 'Desconocido'}`}
+		backUrl="/products/nexus"
+	/>
 
 	<div class="p-8 space-y-6">
 		<!-- Client Info -->
@@ -32,19 +71,36 @@
 			<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
 				<div>
 					<p class="text-sm text-slate-500">Nombre</p>
-					<p class="font-medium">{client.name}</p>
+					<p class="font-medium">{client?.name || '-'}</p>
 				</div>
 				<div>
 					<p class="text-sm text-slate-500">Estatus</p>
-					<p class="font-medium">{client.status}</p>
+					<p class="font-medium">
+						<span
+							class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+								${
+									client?.status === 'ACTIVE'
+										? 'bg-green-100 text-green-800'
+										: client?.status === 'PENDING'
+											? 'bg-yellow-100 text-yellow-800'
+											: client?.status === 'SUSPENDED'
+												? 'bg-red-100 text-red-800'
+												: 'bg-slate-100 text-slate-800'
+								}`}
+						>
+							{client?.status || '-'}
+						</span>
+					</p>
 				</div>
 				<div>
 					<p class="text-sm text-slate-500">Creado</p>
-					<p class="font-medium">{client.created_at}</p>
+					<p class="font-medium">{client?.formattedCreated || '-'}</p>
 				</div>
 				<div>
-					<p class="text-sm text-slate-500">Suscripción</p>
-					<p class="font-medium">{client.subscription}</p>
+					<p class="text-sm text-slate-500">Subscription ID</p>
+					<p class="font-medium text-xs font-mono">
+						{client?.active_subscription_id || 'Sin suscripción'}
+					</p>
 				</div>
 			</div>
 		</Card>
@@ -74,8 +130,14 @@
 								</tr>
 							{:else}
 								{#each devices as device (device.device_id)}
-									<tr>
-										<td class="px-4 py-3 font-medium">{device.device_id}</td>
+									<tr
+										class="cursor-pointer hover:bg-slate-50 transition-colors"
+										onclick={async () =>
+											await goto(`/products/nexus/devices?device_id=${device.device_id}`)}
+									>
+										<td class="px-4 py-3 font-medium text-blue-600 hover:text-blue-800"
+											>{device.device_id}</td
+										>
 										<td class="px-4 py-3">{device.brand}</td>
 										<td class="px-4 py-3">{device.model}</td>
 									</tr>

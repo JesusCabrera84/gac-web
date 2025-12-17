@@ -90,5 +90,16 @@ export const CommandsService = {
 
 		const queryString = searchParams.toString() ? `?${searchParams.toString()}` : '';
 		return this.api(`/api/v1/commands/device/${deviceId}${queryString}`);
+	},
+
+	/**
+	 * Sync command status with KORE
+	 * @param {string} commandId
+	 * @returns {Promise<Object>}
+	 */
+	async sync(commandId) {
+		return this.api(`/api/v1/commands/${commandId}/sync`, {
+			method: 'POST'
+		});
 	}
 };

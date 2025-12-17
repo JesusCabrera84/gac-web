@@ -61,12 +61,14 @@
 				title={isCollapsed ? item.label : ''}
 				class="flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200 group
 				{isActive(item.href)
-					? 'bg-blue-600/10 text-blue-400 border border-blue-500/20 shadow-sm'
-					: 'text-slate-400 hover:bg-slate-800 hover:text-white hover:border-slate-700 border border-transparent'}
+					? 'bg-blue-600 text-white shadow-md border border-blue-500'
+					: 'text-slate-300 hover:bg-slate-800 hover:text-white hover:border-slate-700 border border-transparent'}
 				{isCollapsed ? 'justify-center' : ''}"
 			>
 				<span
-					class="transition-colors {isActive(item.href) ? 'text-blue-400' : 'text-slate-400'}
+					class="transition-colors {isActive(item.href)
+						? 'text-white'
+						: 'text-slate-300 group-hover:text-white'}
 					{isCollapsed ? '' : 'mr-3'}"
 				>
 					{#if item.icon === 'LayoutDashboard'}
@@ -154,7 +156,7 @@
 		<button
 			onclick={logout}
 			title={isCollapsed ? 'Cerrar Sesión' : ''}
-			class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-400 bg-slate-800 hover:bg-red-900/20 hover:text-red-400 hover:border-red-900/30 border border-transparent rounded-md transition-all duration-200"
+			class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-red-900/20 hover:text-red-400 hover:border-red-900/30 border border-transparent rounded-md transition-all duration-200"
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"

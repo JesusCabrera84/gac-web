@@ -3,13 +3,34 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import { onMount } from 'svelte';
+	import { DevicesService } from '$lib/services/devices';
+	import { ClientsService } from '$lib/services/clients';
+	import { userService } from '$lib/services/users';
 
 	let currentDate = $state(new Date());
+	let nexusDeviceCount = $state(0);
+	let nexusClientCount = $state(0);
+	let userCount = $state(0);
 
-	onMount(() => {
+	onMount(async () => {
 		const interval = setInterval(() => {
 			currentDate = new Date();
 		}, 1000);
+
+		try {
+			const [devices, clientStats, users] = await Promise.all([
+				DevicesService.getAll(),
+				ClientsService.getStats(),
+				userService.getUsers()
+			]);
+			nexusDeviceCount = devices.length;
+			nexusClientCount = clientStats.total || 0;
+			// users response structure: { message: "...", data: [...] }
+			userCount = users && users.data ? users.data.length : 0;
+		} catch (error) {
+			console.error('Error fetching dashboard stats:', error);
+		}
+
 		return () => clearInterval(interval);
 	});
 </script>
@@ -53,17 +74,42 @@
 		</div>
 
 		<!-- Quick Stats Row -->
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+			<!-- Nexus Clients -->
+			<Card class="p-6 border-l-4 border-l-cyan-500 hover:shadow-md transition-shadow">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-sm font-medium text-slate-500 mb-1">Clientes Registrados</p>
+						<h3 class="text-2xl font-bold text-slate-800">{nexusClientCount}</h3>
+						<p class="text-xs text-slate-400 mt-1">Total activos</p>
+					</div>
+					<div class="p-3 bg-cyan-50 rounded-lg text-cyan-600">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle
+								cx="9"
+								cy="7"
+								r="4"
+							/><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg
+						>
+					</div>
+				</div>
+			</Card>
+
 			<!-- Nexus Status -->
 			<Card class="p-6 border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
 				<div class="flex items-center justify-between">
 					<div>
 						<p class="text-sm font-medium text-slate-500 mb-1">Dispositivos Nexus</p>
-						<h3 class="text-2xl font-bold text-slate-800">124</h3>
-						<p class="text-xs text-green-600 flex items-center mt-1">
-							<span class="w-2 h-2 rounded-full bg-green-500 mr-1.5"></span>
-							98% En línea
-						</p>
+						<h3 class="text-2xl font-bold text-slate-800">{nexusDeviceCount}</h3>
 					</div>
 					<div class="p-3 bg-blue-50 rounded-lg text-blue-600">
 						<svg
@@ -119,8 +165,7 @@
 				<div class="flex items-center justify-between">
 					<div>
 						<p class="text-sm font-medium text-slate-500 mb-1">Usuarios Internos</p>
-						<h3 class="text-2xl font-bold text-slate-800">12</h3>
-						<p class="text-xs text-slate-400 mt-1">3 Activos ahora</p>
+						<h3 class="text-2xl font-bold text-slate-800">{userCount}</h3>
 					</div>
 					<div class="p-3 bg-purple-50 rounded-lg text-purple-600">
 						<svg

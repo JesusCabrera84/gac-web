@@ -22,10 +22,7 @@
 		try {
 			if (!clientId) return;
 
-			const [clientData, devicesData] = await Promise.all([
-				ClientsService.getById(clientId),
-				DevicesService.getAll() // We have to filter safely. Ideally endpoint supports filtering by client_id
-			]);
+			const clientData = await ClientsService.getById(clientId);
 
 			client = clientData;
 			// Filter devices for this client.

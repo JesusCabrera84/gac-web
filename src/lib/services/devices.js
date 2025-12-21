@@ -203,8 +203,9 @@ export const DevicesService = {
 	/**
 	 * Get communications history for a device
 	 * @param {string} deviceId
-	 * @param {string} [date] - YYYY-MM-DD
-	 * @returns {Promise<Array>}
+	 * @param {string} date - YYYY-MM-DD
+	 * @param {string} [tz] - Timezone
+	 * @returns {Promise<Array<any>>}
 	 */
 	async getCommunications(deviceId, date, tz) {
 		const endpoint = `/api/v1/devices/${deviceId}/communications`;

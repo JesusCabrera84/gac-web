@@ -12,7 +12,9 @@
 	let name = $state('');
 	let email = $state('');
 	let password = $state('');
+	/** @type {any[]} */
 	let selectedRoles = $state([]);
+	/** @type {any[]} */
 	let availableRoles = $state([]);
 	let isActive = $state(true);
 	let isLoading = $state(true);
@@ -53,10 +55,13 @@
 	}
 
 	onMount(async () => {
-		userId = $page.params.id;
-		await Promise.all([loadRoles(), loadUser()]);
+		userId = $page.params.id || '';
+		if (userId) {
+			await Promise.all([loadRoles(), loadUser()]);
+		}
 	});
 
+	/** @param {string} roleName */
 	function toggleRole(roleName) {
 		if (selectedRoles.includes(roleName)) {
 			selectedRoles = selectedRoles.filter((r) => r !== roleName);
@@ -65,11 +70,13 @@
 		}
 	}
 
+	/** @param {SubmitEvent} e */
 	async function handleSubmit(e) {
 		e.preventDefault();
 		isSaving = true;
 		error = '';
 
+		/** @type {{full_name: string, email: string, is_active: boolean, roles: any[], password?: string}} */
 		const payload = {
 			full_name: name,
 			email,
@@ -86,7 +93,7 @@
 			goto('/admin/internal-users');
 		} catch (err) {
 			console.error('Failed to update user:', err);
-			error = err.message || 'Error al actualizar usuario.';
+			error = /** @type {any} */ (err).message || 'Error al actualizar usuario.';
 		} finally {
 			isSaving = false;
 		}

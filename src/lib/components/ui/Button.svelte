@@ -1,6 +1,6 @@
 <script>
 	/**
-	 * @typedef {'primary' | 'secondary' | 'danger' | 'ghost'} Variant
+	 * @typedef {'primary' | 'secondary' | 'danger' | 'ghost' | 'outline'} Variant
 	 * @typedef {'sm' | 'md' | 'lg'} Size
 	 */
 
@@ -30,7 +30,8 @@
 		primary: 'bg-slate-900 text-white hover:bg-slate-800 focus-visible:ring-slate-900',
 		secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200 focus-visible:ring-slate-500',
 		danger: 'bg-red-500 text-white hover:bg-red-600 focus-visible:ring-red-500',
-		ghost: 'hover:bg-slate-100 hover:text-slate-900'
+		ghost: 'hover:bg-slate-100 hover:text-slate-900',
+		outline: 'border border-slate-200 bg-transparent hover:bg-slate-100 text-slate-900'
 	};
 
 	const sizes = {

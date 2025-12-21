@@ -7,6 +7,7 @@
 	import { ClientsService } from '$lib/services/clients';
 	import { onMount } from 'svelte';
 
+	/** @type {any[]} */
 	let clients = $state([]);
 	let isLoading = $state(false);
 	let searchTerm = $state('');
@@ -36,18 +37,21 @@
 			const stats = statsData || { total: 0 };
 
 			deviceCount = devices.length;
-			clientCount = stats.total;
+			clientCount = /** @type {any} */ (stats).total;
 
 			// Map devices to clients to count them
-			const deviceCounts = devices.reduce((acc, device) => {
-				if (device.client_id) {
-					acc[device.client_id] = (acc[device.client_id] || 0) + 1;
-				}
-				return acc;
-			}, {});
+			const deviceCounts = devices.reduce(
+				(/** @type {Record<string, number>} */ acc, /** @type {any} */ device) => {
+					if (device.client_id) {
+						acc[device.client_id] = (acc[device.client_id] || 0) + 1;
+					}
+					return acc;
+				},
+				{}
+			);
 
 			// Format clients for display
-			clients = fetchedClients.map((client) => ({
+			clients = fetchedClients.map((/** @type {any} */ client) => ({
 				...client,
 				deviceCount: deviceCounts[client.id] || 0,
 				formattedCreated: new Date(client.created_at).toLocaleDateString(),

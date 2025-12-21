@@ -12,24 +12,26 @@
 	let nexusClientCount = $state(0);
 	let userCount = $state(0);
 
-	onMount(async () => {
+	onMount(() => {
 		const interval = setInterval(() => {
 			currentDate = new Date();
 		}, 1000);
 
-		try {
-			const [devices, clientStats, users] = await Promise.all([
-				DevicesService.getAll(),
-				ClientsService.getStats(),
-				userService.getUsers()
-			]);
-			nexusDeviceCount = devices.length;
-			nexusClientCount = clientStats.total || 0;
-			// users response structure: { message: "...", data: [...] }
-			userCount = users && users.data ? users.data.length : 0;
-		} catch (error) {
-			console.error('Error fetching dashboard stats:', error);
-		}
+		(async () => {
+			try {
+				const [devices, clientStats, users] = await Promise.all([
+					DevicesService.getAll(),
+					ClientsService.getStats(),
+					userService.getUsers()
+				]);
+				nexusDeviceCount = devices.length;
+				nexusClientCount = /** @type {any} */ (clientStats).total || 0;
+				// users response structure: { message: "...", data: [...] }
+				userCount = users && users.data ? users.data.length : 0;
+			} catch (error) {
+				console.error('Error fetching dashboard stats:', error);
+			}
+		})();
 
 		return () => clearInterval(interval);
 	});

@@ -27,17 +27,19 @@
 
 	onMount(async () => {
 		/** @type {{id: string}} */
-		const params = $page.params;
+		const params = /** @type {any} */ ($page.params);
 		const id = params.id;
 		if (id) {
 			await loadDevice(id);
 		}
 	});
 
+	/** @param {string} id */
 	async function loadDevice(id) {
 		isLoading = true;
 		errorMessage = '';
 		try {
+			/** @type {any} */
 			const device = await DevicesService.getById(id);
 			deviceId = device.device_id;
 			brand = device.brand || '';
@@ -63,6 +65,7 @@
 		}
 	}
 
+	/** @param {SubmitEvent} e */
 	async function handleSubmit(e) {
 		e.preventDefault();
 		isSaving = true;
@@ -90,7 +93,7 @@
 			successMessage = 'Dispositivo actualizado correctamente.';
 		} catch (error) {
 			console.error('Error updating device:', error);
-			errorMessage = error.message || 'Error al actualizar el dispositivo';
+			errorMessage = /** @type {any} */ (error).message || 'Error al actualizar el dispositivo';
 		} finally {
 			isSaving = false;
 		}
@@ -122,21 +125,21 @@
 				<form onsubmit={handleSubmit} class="space-y-6">
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div class="col-span-2">
-							<label class="block text-sm font-medium text-slate-700 mb-1">Device ID</label>
+							<p class="block text-sm font-medium text-slate-700 mb-1">Device ID</p>
 							<div class="p-2 bg-slate-100 rounded text-slate-900 font-mono">
 								{deviceId}
 							</div>
 						</div>
 
 						<div class="col-span-2 md:col-span-1">
-							<label class="block text-sm font-medium text-slate-700 mb-1">Estatus Actual</label>
+							<p class="block text-sm font-medium text-slate-700 mb-1">Estatus Actual</p>
 							<div class="p-2 bg-slate-50 rounded text-slate-900">
 								{status}
 							</div>
 						</div>
 
 						<div class="col-span-2 md:col-span-1">
-							<label class="block text-sm font-medium text-slate-700 mb-1">Cliente Asignado</label>
+							<p class="block text-sm font-medium text-slate-700 mb-1">Cliente Asignado</p>
 							<div class="p-2 bg-slate-50 rounded text-slate-900">
 								{clientId || 'Sin asignar'}
 							</div>

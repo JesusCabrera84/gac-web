@@ -13,6 +13,7 @@
 	let isLoading = $state(false);
 	let error = $state('');
 
+	/** @param {SubmitEvent} e */
 	async function handleSubmit(e) {
 		e.preventDefault();
 		isLoading = true;

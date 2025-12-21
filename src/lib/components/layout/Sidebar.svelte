@@ -14,6 +14,7 @@
 		}
 	];
 
+	/** @param {string} href */
 	function isActive(href) {
 		return $page.url.pathname.startsWith(href);
 	}

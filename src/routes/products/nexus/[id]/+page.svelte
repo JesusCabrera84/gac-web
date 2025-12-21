@@ -7,7 +7,9 @@
 	import { onMount } from 'svelte';
 
 	let deviceId = $derived($page.params.id);
+	/** @type {any} */
 	let device = $state(null);
+	/** @type {any[]} */
 	let history = $state([]);
 	let isLoading = $state(true);
 	let showAssignModal = $state(false);
@@ -98,6 +100,7 @@
 		}
 	}
 
+	/** @param {string} status */
 	function getStatusColor(status) {
 		switch (status) {
 			case 'active':

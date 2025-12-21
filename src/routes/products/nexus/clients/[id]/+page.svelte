@@ -13,7 +13,9 @@
 
 	/** @type {any} */
 	let client = $state({});
+	/** @type {any[]} */
 	let devices = $state([]);
+	/** @type {any[]} */
 	let units = $state([]);
 	let isLoading = $state(true);
 

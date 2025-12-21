@@ -10,7 +10,9 @@
 	let name = $state('');
 	let email = $state('');
 	let password = $state('');
+	/** @type {any[]} */
 	let selectedRoles = $state([]);
+	/** @type {any[]} */
 	let availableRoles = $state([]);
 	let isLoading = $state(false);
 	let error = $state('');
@@ -39,6 +41,7 @@
 		loadRoles();
 	});
 
+	/** @param {string} roleName */
 	function toggleRole(roleName) {
 		if (selectedRoles.includes(roleName)) {
 			selectedRoles = selectedRoles.filter((r) => r !== roleName);
@@ -47,6 +50,7 @@
 		}
 	}
 
+	/** @param {SubmitEvent} e */
 	async function handleSubmit(e) {
 		e.preventDefault();
 		isLoading = true;
@@ -62,7 +66,7 @@
 			goto('/admin/internal-users');
 		} catch (err) {
 			console.error('Failed to create user:', err);
-			error = err.message || 'Error al crear usuario.';
+			error = /** @type {any} */ (err).message || 'Error al crear usuario.';
 		} finally {
 			isLoading = false;
 		}

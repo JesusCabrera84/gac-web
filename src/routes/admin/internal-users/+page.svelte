@@ -6,7 +6,9 @@
 	import { onMount } from 'svelte';
 	import { userService } from '$lib/services/users';
 
+	/** @type {any[]} */
 	let allUsers = $state([]);
+	/** @type {any[]} */
 	let displayedUsers = $state([]);
 	let isLoading = $state(true);
 	let searchQuery = $state('');
@@ -76,12 +78,14 @@
 		// Let's use the searchQuery in the filter logic called by the input
 	});
 
+	/** @param {any} e */
 	function handleSearch(e) {
 		searchQuery = e.target.value;
 		currentPage = 1; // Reset to page 1
 		filterUsers();
 	}
 
+	/** @param {string} userId */
 	async function deleteUser(userId) {
 		if (!confirm('¿Estás seguro de que deseas desactivar este usuario? start')) return;
 

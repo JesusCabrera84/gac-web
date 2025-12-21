@@ -5,6 +5,7 @@
 	import { productService } from '$lib/services/products';
 	import { onMount } from 'svelte';
 
+	/** @type {any[]} */
 	let products = $state([]);
 	let isLoading = $state(true);
 
@@ -23,7 +24,7 @@
 			const list = Array.isArray(apiProducts) ? apiProducts : apiProducts.data || [];
 
 			if (list && list.length > 0) {
-				products = list.map((p) => ({
+				products = list.map((/** @type {any} */ p) => ({
 					...p,
 					// Default icon if not specified
 					icon: p.icon || 'Box',

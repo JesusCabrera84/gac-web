@@ -6,17 +6,22 @@
 	/** @type {{ deviceId: string | null }} */
 	let { deviceId = null } = $props();
 
+	/** @type {any[]} */
 	let commands = $state([]);
 	let loading = $state(false);
 	let sendLoading = $state(false);
 	let newCommand = $state('');
+	/** @type {string | null} */
 	let error = $state(null);
 
 	// New State
+	/** @type {Record<string, boolean>} */
 	let syncLoading = $state({}); // Track loading state by command_id
 	let showMetadataModal = $state(false);
+	/** @type {any} */
 	let selectedMetadata = $state(null);
 	let toast = $state({ show: false, message: '', type: 'info' });
+	/** @type {any} */
 	let toastTimeout;
 
 	// Load commands when deviceId changes
@@ -35,6 +40,7 @@
 		try {
 			// Fetch last 50 commands
 			const response = await CommandsService.getByDevice(deviceId, { limit: 50 });
+			// @ts-ignore
 			commands = response.commands || [];
 		} catch (e) {
 			console.error('Error loading commands:', e);
@@ -67,6 +73,7 @@
 		}
 	}
 
+	/** @param {any} command */
 	async function handleSync(command) {
 		if (syncLoading[command.command_id]) return;
 
@@ -93,7 +100,7 @@
 					...cmd,
 					metadata: {
 						...cmd.metadata,
-						sync_error: e.message
+						sync_error: /** @type {any} */ (e).message
 					}
 				};
 			}
@@ -104,6 +111,7 @@
 		}
 	}
 
+	/** @param {string} text */
 	function copyToClipboard(text) {
 		navigator.clipboard
 			.writeText(text)
@@ -115,6 +123,7 @@
 			});
 	}
 
+	/** @param {any} metadata */
 	function openMetadata(metadata) {
 		selectedMetadata = metadata;
 		showMetadataModal = true;
@@ -125,6 +134,10 @@
 		selectedMetadata = null;
 	}
 
+	/**
+	 * @param {string} message
+	 * @param {string} [type]
+	 */
 	function showToast(message, type = 'info') {
 		if (toastTimeout) clearTimeout(toastTimeout);
 		toast = { show: true, message, type };
@@ -133,6 +146,7 @@
 		}, 3000);
 	}
 
+	/** @param {string} dateString */
 	function formatDate(dateString) {
 		if (!dateString) return '-';
 		return new Date(dateString).toLocaleString();
@@ -354,13 +368,17 @@
 			<div
 				class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
 				onclick={(e) => e.stopPropagation()}
+				onkeydown={(e) => e.key === 'Escape' && closeMetadata()}
 				role="dialog"
+				tabindex="-1"
+				aria-modal="true"
 			>
 				<div class="flex items-center justify-between p-4 border-b border-slate-100">
 					<h3 class="text-lg font-semibold text-slate-800">Metadata del Comando</h3>
 					<button
 						onclick={closeMetadata}
 						class="text-slate-400 hover:text-slate-600 transition-colors"
+						aria-label="Cerrar metadata"
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"

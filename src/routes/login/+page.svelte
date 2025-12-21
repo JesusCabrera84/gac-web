@@ -14,6 +14,7 @@
 		// Any future mounting logic
 	});
 
+	/** @param {SubmitEvent} e */
 	async function handleLogin(e) {
 		e.preventDefault();
 		isLoading = true;

@@ -12,12 +12,26 @@
 	// @ts-ignore
 	import { GoogleMapEngine, TripReplayController } from '@jesusCabrera84/map-engine';
 
+	/**
+	 * @typedef {Object} Device
+	 * @property {string} [device_id]
+	 * @property {string} [iccid]
+	 * @property {string} [brand]
+	 * @property {string} [model]
+	 * @property {string} [status]
+	 * @property {string} [client_id]
+	 * @property {string} [last_comm_at]
+	 */
+
+	/** @type {Device[]} */
 	let devices = $state([]);
 	let isLoading = $state(true);
 	let searchTerm = $state('');
+	/** @type {string | null} */
 	let selectedDeviceId = $state(null);
 	let activeTab = $state('commands'); // 'commands' or 'communications'
 	let selectedDate = $state('');
+	/** @type {string | null} */
 	let lastCommunicationTime = $state(null);
 
 	// Sidebar & Resizable state
@@ -25,10 +39,41 @@
 	let isDragging = $state(false);
 	let sidebarTab = $state('trips'); // 'trips' or 'communications'
 
+	/**
+	 * @typedef {Object} Trip
+	 * @property {string} trip_id
+	 * @property {string} device_id
+	 * @property {string} start_timestamp
+	 * @property {string} end_timestamp
+	 * @property {number} [distance_km]
+	 * @property {number} [duration_minutes]
+	 * @property {any[]} [points]
+	 * @property {any[]} [alerts]
+	 */
+
+	/**
+	 * @typedef {Object} Communication
+	 * @property {string} [uuid]
+	 * @property {string} [device_id]
+	 * @property {string} [received_at]
+	 * @property {number} [latitude]
+	 * @property {number} [longitude]
+	 * @property {number} [lat]
+	 * @property {number} [lng]
+	 * @property {number} [speed]
+	 * @property {number} [speedKmh]
+	 * @property {number} [course]
+	 * @property {number} [heading]
+	 * @property {any} [metadata]
+	 * @property {any} [decoded]
+	 */
+
 	// Trips data
+	/** @type {Trip[]} */
 	let trips = $state([]);
 	let isLoadingTrips = $state(false);
 	// Trip Replay state
+	/** @type {string | null} */
 	let selectedTripId = $state(null);
 	let isPlaying = $state(false);
 	let isPaused = $state(false);
@@ -36,6 +81,7 @@
 	let tripReplay = $state(null);
 
 	// Communications data
+	/** @type {Communication[]} */
 	let communications = $state([]);
 	let isLoadingCommunications = $state(false);
 	let hiddenColumns = new SvelteSet();
@@ -45,6 +91,7 @@
 		communications.length > 0 ? Object.keys(communications[0] || {}).filter((k) => k !== 'id') : []
 	);
 
+	/** @param {string} col */
 	function toggleColumn(col) {
 		if (hiddenColumns.has(col)) {
 			hiddenColumns.delete(col);
@@ -58,6 +105,7 @@
 	/** @type {GoogleMapEngine | null} */
 	let mapEngine = $state(null);
 
+	/** @type {WebSocket | null} */
 	let socket = $state(null);
 
 	onMount(async () => {
@@ -93,6 +141,7 @@
 		// Initialize resize if needed
 	}
 
+	/** @param {MouseEvent} event */
 	function handleResize(event) {
 		if (!isDragging) return;
 		const newWidth = event.clientX - 64; // Adjusted offset for minimized/normal sidebar, defaulting to small? Wait, we need to know main sidebar width.
@@ -114,6 +163,7 @@
 	// ...
 
 	// Handle device selection or tab change
+	/** @type {string | null} */
 	let streamDeviceId = $state(null);
 
 	$effect(() => {
@@ -132,7 +182,9 @@
 			if (streamDeviceId !== selectedDeviceId) {
 				console.log('Switching stream device from', streamDeviceId, 'to', selectedDeviceId);
 				streamDeviceId = selectedDeviceId;
-				loadDeviceDataAndConnectStream(selectedDeviceId);
+				if (selectedDeviceId) {
+					loadDeviceDataAndConnectStream(selectedDeviceId);
+				}
 				// Load data for the active internal tab
 				if (selectedDate) {
 					if (sidebarTab === 'trips') loadTrips();
@@ -166,6 +218,7 @@
 				container: mapContainer,
 				apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
 				theme: 'modern',
+				/** @param {any} vehicle */
 				infoWindowRenderer: (vehicle) => `
 					<div class="p-2 text-slate-800">
 						<h3 class="font-bold">${vehicle.device_id || 'Unknown'}</h3>
@@ -210,6 +263,7 @@
 		}
 	});
 
+	/** @param {boolean} isOnline */
 	function getVehicleIcon(isOnline) {
 		const color = isOnline ? '#22c55e' : '#64748b'; // Green-500 : Slate-500
 		return {
@@ -224,12 +278,14 @@
 		};
 	}
 
+	/** @param {string} deviceId */
 	async function loadDeviceDataAndConnectStream(deviceId) {
 		// 1. Cleanup previous stream
 		cleanupStream();
 
 		try {
 			// 2. Fetch latest position
+			/** @type {any} */
 			const data = await DevicesService.getLatestCommunication(deviceId);
 
 			if (!data) {
@@ -273,15 +329,22 @@
 					ts = new Date(data.received_at).getTime();
 				}
 
+				// @ts-ignore
 				const vehicleData = {
 					...data,
 					id: deviceId, // Required by Map Engine
 					// Ensure types are correct
+					// @ts-ignore
 					latitude: Number(data.latitude),
+					// @ts-ignore
 					longitude: Number(data.longitude),
+					// @ts-ignore
 					lat: Number(data.latitude),
+					// @ts-ignore
 					lng: Number(data.longitude),
+					// @ts-ignore
 					speedKmh: Number(data.speed || 0), // Engine prefers speedKmh
+					// @ts-ignore
 					bearing: Number(data.course || data.heading || 0), // Engine prefers bearing
 					timestamp: ts, // Engine requires number (epoch)
 					online: isOnline,
@@ -310,7 +373,7 @@
 					console.log('✅ WebSocket Connected');
 				};
 
-				socket.onmessage = (event) => {
+				socket.onmessage = (/** @type {MessageEvent} */ event) => {
 					try {
 						const message = JSON.parse(event.data);
 						if (message.event === 'message' && message.data && message.data.data) {
@@ -362,7 +425,7 @@
 	async function loadDevices() {
 		isLoading = true;
 		try {
-			devices = await DevicesService.getAll();
+			devices = /** @type {Device[]} */ (await DevicesService.getAll());
 		} catch (error) {
 			console.error('Error loading devices:', error);
 		} finally {
@@ -380,6 +443,7 @@
 				day: selectedDate,
 				tz: 'America/Mexico_City'
 			});
+			// @ts-ignore
 			trips = response.trips || [];
 		} catch (error) {
 			console.error('Error loading trips:', error);
@@ -413,25 +477,27 @@
 		devices.filter((device) => {
 			const term = searchTerm.toLowerCase();
 			return (
-				device.device_id.toLowerCase().includes(term) ||
-				device.brand.toLowerCase().includes(term) ||
-				device.model.toLowerCase().includes(term) ||
-				(device.status && device.status.toLowerCase().includes(term))
+				(device.device_id || '').toLowerCase().includes(term) ||
+				(device.brand || '').toLowerCase().includes(term) ||
+				(device.model || '').toLowerCase().includes(term) ||
+				(device.status || '').toLowerCase().includes(term)
 			);
 		})
 	);
 
+	/** @param {Device} device */
 	function handleRowClick(device) {
 		if (selectedDeviceId === device.device_id) {
 			selectedDeviceId = null; // Deselect if already selected
 		} else {
-			selectedDeviceId = device.device_id;
+			selectedDeviceId = device.device_id || '';
 		}
 	}
 
+	/** @param {Trip} trip */
 	async function selectTrip(trip) {
 		if (selectedTripId === trip.trip_id) return;
-		selectedTripId = trip.trip_id;
+		selectedTripId = trip.trip_id || null;
 		isPlaying = false;
 		isPaused = false;
 
@@ -446,7 +512,8 @@
 			});
 
 			if (tripDetails && tripReplay) {
-				const points = (tripDetails.points || []).map((p) => ({
+				// @ts-ignore
+				const points = (tripDetails.points || []).map((/** @type {any} */ p) => ({
 					lat: p.lat,
 					lng: p.lon, // Engine uses lng
 					ts: new Date(p.timestamp).getTime(), // Changed: Engine expects 'ts' (epoch) instead of 'timestamp'
@@ -455,7 +522,8 @@
 					itemType: 'status'
 				}));
 
-				const alerts = (tripDetails.alerts || []).map((a) => ({
+				// @ts-ignore
+				const alerts = (tripDetails.alerts || []).map((/** @type {any} */ a) => ({
 					lat: a.lat,
 					lng: a.lon, // Engine uses lng
 					ts: new Date(a.timestamp).getTime(), // Changed: Engine expects 'ts' (epoch) instead of 'timestamp'
@@ -869,8 +937,8 @@
 										{:else}
 											<div class="space-y-3">
 												{#each trips as trip (trip.trip_id)}
-													<div
-														class="bg-white border rounded-lg p-3 cursor-pointer transition-colors shadow-sm {selectedTripId ===
+													<button
+														class="bg-white border rounded-lg p-3 cursor-pointer transition-colors shadow-sm w-full text-left {selectedTripId ===
 														trip.trip_id
 															? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/20'
 															: 'border-slate-200 hover:border-blue-400'}"
@@ -903,7 +971,7 @@
 															<span>{(trip.distance_km || 0).toFixed(1)} km</span>
 															<span>{Math.round(trip.duration_minutes || 0)} min</span>
 														</div>
-													</div>
+													</button>
 												{/each}
 											</div>
 										{/if}
@@ -1000,7 +1068,9 @@
 																				title="Copiar UUID"
 																				onclick={(e) => {
 																					e.stopPropagation();
-																					navigator.clipboard.writeText(comm.uuid);
+																					if (navigator && navigator.clipboard) {
+																						navigator.clipboard.writeText(comm.uuid || '');
+																					}
 																				}}
 																			>
 																				<svg
@@ -1020,7 +1090,7 @@
 																				>
 																			</button>
 																		{:else}
-																			{comm[key] ?? ''}
+																			{/** @type {any} */ (comm)[key] ?? ''}
 																		{/if}
 																	</td>
 																{/each}
@@ -1039,11 +1109,15 @@
 						<div
 							class="w-1 bg-slate-200 hover:bg-blue-400 cursor-col-resize z-30 transition-colors flex items-center justify-center focus:outline-none focus:bg-blue-500"
 							onmousedown={startResize}
-							role="separator"
+							role="slider"
 							tabindex="0"
 							aria-valuenow={sidebarWidth}
 							aria-valuemin="100"
 							aria-valuemax="1000"
+							onkeydown={(e) => {
+								if (e.key === 'ArrowLeft') sidebarWidth = Math.max(100, sidebarWidth - 10);
+								if (e.key === 'ArrowRight') sidebarWidth = Math.min(1000, sidebarWidth + 10);
+							}}
 						>
 							<div class="h-8 w-1 bg-slate-300 rounded-full"></div>
 						</div>

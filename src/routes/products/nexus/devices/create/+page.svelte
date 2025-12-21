@@ -18,6 +18,7 @@
 	let isLoading = $state(false);
 	let errorMessage = $state('');
 
+	/** @param {SubmitEvent} e */
 	async function handleSubmit(e) {
 		e.preventDefault();
 		isLoading = true;
@@ -45,7 +46,7 @@
 			await goto('/products/nexus/devices');
 		} catch (error) {
 			console.error('Error creating device:', error);
-			errorMessage = error.message || 'Error al crear el dispositivo';
+			errorMessage = /** @type {any} */ (error).message || 'Error al crear el dispositivo';
 		} finally {
 			isLoading = false;
 		}

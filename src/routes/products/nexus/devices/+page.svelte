@@ -166,11 +166,6 @@
 				container: mapContainer,
 				apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
 				theme: 'modern',
-				iconResolver: (vehicle) => ({
-					url: vehicle.online ? '/icons/car-active.png' : '/icons/car-inactive.png',
-					size: [40, 40],
-					anchor: [20, 20]
-				}),
 				infoWindowRenderer: (vehicle) => `
 					<div class="p-2 text-slate-800">
 						<h3 class="font-bold">${vehicle.device_id || 'Unknown'}</h3>
@@ -181,6 +176,9 @@
 
 			const mapInstance = await mapEngine.mount(mapContainer);
 			console.log('Map Engine Mounted');
+
+			// Start Live Motion Loop
+			mapEngine.startLive();
 
 			// Initialize Trip Replay Controller
 			// v0.1.4 requires (map, google)
@@ -212,6 +210,20 @@
 		}
 	});
 
+	function getVehicleIcon(isOnline) {
+		const color = isOnline ? '#22c55e' : '#64748b'; // Green-500 : Slate-500
+		return {
+			path: 'M0,-15 L10,15 L0,10 L-10,15 Z', // Sharper arrow
+			fillColor: color,
+			fillOpacity: 1,
+			strokeColor: '#FFFFFF',
+			strokeWeight: 2,
+			scale: 1.5,
+			rotation: 0, // Engine handles rotation if bearing is provided
+			anchor: { x: 0, y: 0 }
+		};
+	}
+
 	async function loadDeviceDataAndConnectStream(deviceId) {
 		// 1. Cleanup previous stream
 		cleanupStream();
@@ -227,29 +239,56 @@
 
 			// Update UI date/time
 			if (data.received_at) {
-				const dateObj = new Date(data.received_at);
-				// Set date input (YYYY-MM-DD)
-				selectedDate = dateObj.toISOString().split('T')[0];
+				// Ensure we treat it as UTC if no info provided
+				let dateStr = data.received_at;
+				// check if has timezone info (Z or +00:00 style)
+				// simplistic check: if ends in digit, likely needs Z
+				if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?$/.test(dateStr)) {
+					dateStr += 'Z';
+				}
+
+				const dateObj = new Date(dateStr);
+				// Set date input (YYYY-MM-DD) - Adjust to Mexico City
+				selectedDate = dateObj.toLocaleDateString('en-CA', {
+					timeZone: 'America/Mexico_City'
+				});
 				// Set time for display
 				lastCommunicationTime = dateObj.toLocaleTimeString('es-MX', {
 					hour: '2-digit',
 					minute: '2-digit',
 					second: '2-digit',
-					hour12: true
+					hour12: true,
+					timeZone: 'America/Mexico_City'
 				});
 			}
 
 			if (mapEngine) {
 				// 3. Update Map
 				// Normalize data for map engine if needed.
+				const isOnline = true; // Logic to determine online status?
+
+				// Timestamp handling
+				let ts = Date.now();
+				if (data.received_at) {
+					ts = new Date(data.received_at).getTime();
+				}
+
 				const vehicleData = {
 					...data,
+					id: deviceId, // Required by Map Engine
 					// Ensure types are correct
 					latitude: Number(data.latitude),
 					longitude: Number(data.longitude),
-					online: true // Assume online if we just got data? Or check timestamp?
+					lat: Number(data.latitude),
+					lng: Number(data.longitude),
+					speedKmh: Number(data.speed || 0), // Engine prefers speedKmh
+					bearing: Number(data.course || data.heading || 0), // Engine prefers bearing
+					timestamp: ts, // Engine requires number (epoch)
+					online: isOnline,
+					icon: getVehicleIcon(isOnline)
 				};
 
+				console.log('Adding vehicle marker:', vehicleData);
 				mapEngine.clearAllMarkers();
 				mapEngine.addVehicleMarker(vehicleData);
 
@@ -259,9 +298,6 @@
 					mapEngine.setCenter(vehicleData.latitude, vehicleData.longitude);
 				} else {
 					console.warn('mapEngine.setCenter is not a function');
-					// Fallback if the user was guessing, but let's trust the user first.
-					// If they are correct, this works.
-					// If they are incorrect, we might need to look at the engine source if possible or prototype.
 				}
 
 				// 4. Connect WebSocket ONLY if we successfully loaded data
@@ -284,11 +320,18 @@
 							const rawUpdate = message.data.data;
 
 							const update = {
+								id: rawUpdate.DEVICE_ID || deviceId, // Required by Map Engine
 								device_id: rawUpdate.DEVICE_ID || deviceId,
 								latitude: Number(rawUpdate.LATITUD),
 								longitude: Number(rawUpdate.LONGITUD),
+								lat: Number(rawUpdate.LATITUD),
+								lng: Number(rawUpdate.LONGITUD),
 								speed: Number(rawUpdate.SPEED),
-								online: true
+								speedKmh: Number(rawUpdate.SPEED), // Engine preferred
+								bearing: Number(rawUpdate.COURSE || rawUpdate.HEADING || 0), // Try to get bearing if available
+								timestamp: Date.now(), // Assume now for live stream
+								online: true,
+								icon: getVehicleIcon(true)
 							};
 
 							// Update marker
@@ -351,7 +394,11 @@
 
 		isLoadingCommunications = true;
 		try {
-			const response = await DevicesService.getCommunications(selectedDeviceId, selectedDate);
+			const response = await DevicesService.getCommunications(
+				selectedDeviceId,
+				selectedDate,
+				'America/Mexico_City'
+			);
 			communications = response || [];
 		} catch (error) {
 			console.error('Error loading communications:', error);
@@ -402,7 +449,7 @@
 				const points = (tripDetails.points || []).map((p) => ({
 					lat: p.lat,
 					lng: p.lon, // Engine uses lng
-					timestamp: new Date(p.timestamp),
+					ts: new Date(p.timestamp).getTime(), // Changed: Engine expects 'ts' (epoch) instead of 'timestamp'
 					speed: p.speed,
 					course: p.heading, // bearing in engine usually
 					itemType: 'status'
@@ -411,14 +458,12 @@
 				const alerts = (tripDetails.alerts || []).map((a) => ({
 					lat: a.lat,
 					lng: a.lon, // Engine uses lng
-					timestamp: new Date(a.timestamp),
+					ts: new Date(a.timestamp).getTime(), // Changed: Engine expects 'ts' (epoch) instead of 'timestamp'
 					itemType: 'alert',
 					type: a.type
 				}));
 
-				const replayPoints = [...points, ...alerts].sort(
-					(a, b) => a.timestamp.getTime() - b.timestamp.getTime()
-				);
+				const replayPoints = [...points, ...alerts].sort((a, b) => a.ts - b.ts);
 
 				// Load into engine
 				// v0.1.4: load(coordinates[])

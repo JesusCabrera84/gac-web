@@ -206,11 +206,14 @@ export const DevicesService = {
 	 * @param {string} [date] - YYYY-MM-DD
 	 * @returns {Promise<Array>}
 	 */
-	async getCommunications(deviceId, date) {
+	async getCommunications(deviceId, date, tz) {
 		const endpoint = `/api/v1/devices/${deviceId}/communications`;
 		const params = new URLSearchParams();
 		if (date) {
 			params.append('received_at', date);
+		}
+		if (tz) {
+			params.append('tz', tz);
 		}
 		const queryString = params.toString() ? `?${params.toString()}` : '';
 

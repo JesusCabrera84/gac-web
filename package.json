@@ -32,6 +32,6 @@
 		"vite": "^7.2.2"
 	},
 	"dependencies": {
-		"@jesusCabrera84/map-engine": "npm:@jesusCabrera84/map-engine@^0.1.11"
+		"@jesusCabrera84/map-engine": "npm:@jesusCabrera84/map-engine@^0.1.12"
 	}
 }

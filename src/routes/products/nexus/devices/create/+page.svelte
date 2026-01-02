@@ -46,7 +46,11 @@
 			await goto('/products/nexus/devices');
 		} catch (error) {
 			console.error('Error creating device:', error);
-			errorMessage = /** @type {any} */ (error).message || 'Error al crear el dispositivo';
+			const msg = /** @type {any} */ (error).message;
+			errorMessage =
+				msg === 'Failed to fetch' || msg === 'Load failed'
+					? 'Error de conexión: No se pudo contactar al servidor. Verifique su conexión o intente más tarde.'
+					: msg || 'Error al crear el dispositivo';
 		} finally {
 			isLoading = false;
 		}

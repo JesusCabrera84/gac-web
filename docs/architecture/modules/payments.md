@@ -1,12 +1,14 @@
 # Módulo: Payments
 
 ## 📌 Descripción
+
 Gestión de pagos y transacciones.
 Permite crear pagos, consultar detalles y listar pagos por cliente.
 
 ---
 
 ## 👤 Actor
+
 - Usuario autenticado
 - Rol: user / admin
 
@@ -16,17 +18,18 @@ Permite crear pagos, consultar detalles y listar pagos por cliente.
 
 ### 🔹 GAC API (Gestión de pagos)
 
-| Endpoint | Método | Uso |
-|--------|--------|-----|
-| /api/v1/payments | POST | Crear nuevo pago |
-| /api/v1/payments/{payment_id} | GET | Obtener detalles de un pago |
-| /api/v1/clients/{client_id}/payments | GET | Listar pagos de un cliente |
+| Endpoint                             | Método | Uso                         |
+| ------------------------------------ | ------ | --------------------------- |
+| /api/v1/payments                     | POST   | Crear nuevo pago            |
+| /api/v1/payments/{payment_id}        | GET    | Obtener detalles de un pago |
+| /api/v1/clients/{client_id}/payments | GET    | Listar pagos de un cliente  |
 
 ---
 
 ## 🔁 Flujo funcional
 
 ### Crear Pago
+
 1. Usuario accede a módulo de pagos
 2. Selecciona orden o cliente
 3. Completa información de pago:
@@ -39,6 +42,7 @@ Permite crear pagos, consultar detalles y listar pagos por cliente.
 6. Se actualiza estado de orden (si aplica)
 
 ### Consultar Pago
+
 1. Usuario busca pago por ID
 2. Se obtiene detalle vía `GET /payments/{payment_id}`
 3. Se muestra información completa:
@@ -51,6 +55,7 @@ Permite crear pagos, consultar detalles y listar pagos por cliente.
    - Comprobante (si existe)
 
 ### Listar Pagos de Cliente
+
 1. Usuario accede a perfil de cliente
 2. Se obtienen pagos vía `GET /clients/{client_id}/payments`
 3. Se renderiza lista con:
@@ -64,6 +69,7 @@ Permite crear pagos, consultar detalles y listar pagos por cliente.
 ---
 
 ## ⚠️ Consideraciones
+
 - Requiere token JWT válido (GAC API)
 - Los pagos tienen estados: PENDING, COMPLETED, FAILED, REFUNDED
 - Los métodos de pago pueden requerir integración con pasarelas externas
@@ -80,6 +86,6 @@ Permite crear pagos, consultar detalles y listar pagos por cliente.
 - **Container:** Web App (Svelte)
 - **Consumes:** GAC API (pagos)
 - **Component:** Payments Module
-- **Related:** 
+- **Related:**
   - Orders (para vincular pagos a órdenes)
   - Payment Gateways (Stripe, PayPal - futuro)

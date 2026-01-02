@@ -68,7 +68,7 @@ export const ClientsService = {
 		const params = new URLSearchParams();
 		// Default limit if not specified
 		if (!filters.limit) {
-			params.append('limit', '100');
+			params.append('limit', '50');
 		}
 
 		Object.entries(filters).forEach(([key, value]) => {
@@ -78,7 +78,7 @@ export const ClientsService = {
 		});
 
 		const queryString = params.toString() ? `?${params.toString()}` : '';
-		return this.api(`/api/v1/internal/clients${queryString}`);
+		return this.api(`/api/v1/internal/accounts${queryString}`);
 	},
 
 	/**
@@ -86,7 +86,7 @@ export const ClientsService = {
 	 * @returns {Promise<Object>}
 	 */
 	async getStats() {
-		return this.api('/api/v1/internal/clients/stats');
+		return this.api('/api/v1/internal/accounts/stats');
 	},
 
 	/**
@@ -95,7 +95,18 @@ export const ClientsService = {
 	 * @returns {Promise<Object>}
 	 */
 	async getById(id) {
-		return this.api(`/api/v1/internal/clients/${id}`);
+		return this.api(`/api/v1/internal/accounts/${id}`);
+	},
+
+	/**
+	 * Get organizations for a specific client
+	 * @param {string} id
+	 * @returns {Promise<Array<Object>>}
+	 */
+	async getOrganizations(id) {
+		const response = await this.api(`/api/v1/internal/accounts/${id}/organizations`);
+		// @ts-ignore
+		return Array.isArray(response) ? response : response.organizations || [];
 	}
 
 	/**
@@ -115,9 +126,9 @@ export const ClientsService = {
 	 * Let's keep it but comment that it might be public. Actually, the dashboard doesn't use it.
 	 */
 	/*async create(data) {
-        return this.api('/api/v1/clients/', {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
-    }*/
+		return this.api('/api/v1/clients/', {
+			method: 'POST',
+			body: JSON.stringify(data)
+		});
+	}*/
 };

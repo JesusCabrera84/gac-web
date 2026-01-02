@@ -1,12 +1,14 @@
 # Módulo: Orders
 
 ## 📌 Descripción
+
 Gestión de órdenes de compra/servicio.
 Permite crear órdenes, consultar detalles y listar órdenes por cliente.
 
 ---
 
 ## 👤 Actor
+
 - Usuario autenticado
 - Rol: user / admin
 
@@ -16,17 +18,18 @@ Permite crear órdenes, consultar detalles y listar órdenes por cliente.
 
 ### 🔹 GAC API (Gestión de órdenes)
 
-| Endpoint | Método | Uso |
-|--------|--------|-----|
-| /api/v1/orders | POST | Crear nueva orden |
-| /api/v1/orders/{order_id} | GET | Obtener detalles de una orden |
-| /api/v1/clients/{client_id}/orders | GET | Listar órdenes de un cliente |
+| Endpoint                           | Método | Uso                           |
+| ---------------------------------- | ------ | ----------------------------- |
+| /api/v1/orders                     | POST   | Crear nueva orden             |
+| /api/v1/orders/{order_id}          | GET    | Obtener detalles de una orden |
+| /api/v1/clients/{client_id}/orders | GET    | Listar órdenes de un cliente  |
 
 ---
 
 ## 🔁 Flujo funcional
 
 ### Crear Orden
+
 1. Usuario accede a módulo de órdenes
 2. Hace clic en "Nueva Orden"
 3. Completa formulario con:
@@ -40,6 +43,7 @@ Permite crear órdenes, consultar detalles y listar órdenes por cliente.
 6. Se redirige a detalle de orden
 
 ### Consultar Orden
+
 1. Usuario busca orden por ID
 2. Se obtiene detalle vía `GET /orders/{order_id}`
 3. Se muestra información completa:
@@ -50,6 +54,7 @@ Permite crear órdenes, consultar detalles y listar órdenes por cliente.
    - Historial de cambios
 
 ### Listar Órdenes de Cliente
+
 1. Usuario accede a perfil de cliente
 2. Se obtienen órdenes vía `GET /clients/{client_id}/orders`
 3. Se renderiza lista con:
@@ -62,6 +67,7 @@ Permite crear órdenes, consultar detalles y listar órdenes por cliente.
 ---
 
 ## ⚠️ Consideraciones
+
 - Requiere token JWT válido (GAC API)
 - Las órdenes pueden tener múltiples estados (PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED)
 - Los totales se calculan en el servidor
@@ -76,7 +82,7 @@ Permite crear órdenes, consultar detalles y listar órdenes por cliente.
 - **Container:** Web App (Svelte)
 - **Consumes:** GAC API (órdenes)
 - **Component:** Orders Module
-- **Related:** 
+- **Related:**
   - Products (para seleccionar productos)
   - Payments (para procesar pagos)
   - Shipments (para gestionar envíos)

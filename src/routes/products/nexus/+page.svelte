@@ -3,7 +3,6 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
-	import { DevicesService } from '$lib/services/devices';
 	import { ClientsService } from '$lib/services/clients';
 	import { onMount } from 'svelte';
 
@@ -23,39 +22,33 @@
 
 	onMount(async () => {
 		try {
-			// Fetch devices, clients, and stats in parallel
-			const [devicesData, clientsData, statsData] = await Promise.all([
-				DevicesService.getAll(),
-				ClientsService.getAll({ limit: 100 }),
+			// Fetch clients (accounts) and stats in parallel
+			const [accountsData, statsData] = await Promise.all([
+				// @ts-ignore
+				ClientsService.getAll({ limit: 50 }),
 				ClientsService.getStats()
 			]);
 
-			const devices = devicesData || [];
 			// @ts-ignore
-			const fetchedClients = clientsData || [];
+			const fetchedAccounts = accountsData || [];
 			// @ts-ignore
-			const stats = statsData || { total: 0 };
+			const stats = statsData || { accounts: { total: 0 }, devices: { total: 0 } };
 
-			deviceCount = devices.length;
-			clientCount = /** @type {any} */ (stats).total;
+			// Update counters from stats
+			deviceCount = stats.devices?.total || 0;
+			clientCount = stats.accounts?.total || 0;
 
-			// Map devices to clients to count them
-			const deviceCounts = devices.reduce(
-				(/** @type {Record<string, number>} */ acc, /** @type {any} */ device) => {
-					if (device.client_id) {
-						acc[device.client_id] = (acc[device.client_id] || 0) + 1;
-					}
-					return acc;
-				},
-				{}
-			);
-
-			// Format clients for display
-			clients = fetchedClients.map((/** @type {any} */ client) => ({
-				...client,
-				deviceCount: deviceCounts[client.id] || 0,
-				formattedCreated: new Date(client.created_at).toLocaleDateString(),
-				formattedUpdated: new Date(client.updated_at).toLocaleDateString()
+			// Format accounts for display
+			clients = fetchedAccounts.map((/** @type {any} */ account) => ({
+				id: account.id,
+				name: account.account_name,
+				billingEmail: account.billing_email,
+				ownerEmail: account.owner_email,
+				status: account.status,
+				totalUsers: account.total_users || 0,
+				totalOrganizations: account.total_organizations || 0,
+				formattedCreated: new Date(account.created_at).toLocaleDateString(),
+				formattedUpdated: new Date(account.updated_at).toLocaleDateString()
 			}));
 		} catch (error) {
 			console.error('Error fetching dashboard data:', error);
@@ -153,23 +146,25 @@
 					<thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
 						<tr>
 							<th class="px-6 py-4">Nombre</th>
+							<th class="px-6 py-4">Billing Email</th>
 							<th class="px-6 py-4">Estatus</th>
 							<th class="px-6 py-4">Creado</th>
 							<th class="px-6 py-4">Actualizado</th>
-							<th class="px-6 py-4 text-center">Dispositivos</th>
+							<th class="px-6 py-4 text-center">Usuarios</th>
+							<th class="px-6 py-4 text-center">Organizaciones</th>
 							<th class="px-6 py-4 text-right">Acciones</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-slate-100">
 						{#if isLoading}
 							<tr>
-								<td colspan="6" class="px-6 py-8 text-center text-slate-500">
+								<td colspan="7" class="px-6 py-8 text-center text-slate-500">
 									Cargando clientes...
 								</td>
 							</tr>
 						{:else if filteredClients.length === 0}
 							<tr>
-								<td colspan="6" class="px-6 py-8 text-center text-slate-500">
+								<td colspan="7" class="px-6 py-8 text-center text-slate-500">
 									No se encontraron clientes.
 								</td>
 							</tr>
@@ -177,9 +172,15 @@
 							{#each filteredClients as client (client.id)}
 								<tr
 									class="hover:bg-slate-50 transition-colors cursor-pointer"
-									onclick={() => (window.location.href = `/products/nexus/clients/${client.id}`)}
+									onclick={() => (window.location.href = `/products/nexus/accounts/${client.id}`)}
 								>
-									<td class="px-6 py-4 font-medium text-slate-900">{client.name}</td>
+									<td class="px-6 py-4">
+										<div class="font-medium text-slate-900">{client.name}</div>
+										<div class="text-xs text-slate-500">{client.ownerEmail || ''}</div>
+									</td>
+									<td class="px-6 py-4 text-sm text-slate-600">
+										{client.billingEmail || '-'}
+									</td>
 									<td class="px-6 py-4">
 										<span
 											class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
@@ -198,12 +199,11 @@
 									</td>
 									<td class="px-6 py-4 text-slate-600">{client.formattedCreated}</td>
 									<td class="px-6 py-4 text-slate-600">{client.formattedUpdated}</td>
-									<td class="px-6 py-4 text-center">
-										<span
-											class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
-										>
-											{client.deviceCount}
-										</span>
+									<td class="px-6 py-4 text-center text-slate-600">
+										{client.totalUsers}
+									</td>
+									<td class="px-6 py-4 text-center text-slate-600">
+										{client.totalOrganizations}
 									</td>
 									<td class="px-6 py-4 text-right">
 										<Button variant="ghost" size="sm">Ver Detalle</Button>

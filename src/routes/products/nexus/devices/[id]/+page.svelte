@@ -77,6 +77,7 @@
 			model,
 			firmware_version: firmwareVersion,
 			notes,
+			status,
 			iccid: iccid || undefined,
 			carrier,
 			sim_profile:
@@ -131,16 +132,28 @@
 							</div>
 						</div>
 
+						<!-- Status display moved to editable select below -->
+
 						<div class="col-span-2 md:col-span-1">
-							<p class="block text-sm font-medium text-slate-700 mb-1">Estatus Actual</p>
-							<div class="p-2 bg-slate-50 rounded text-slate-900">
-								{status}
-							</div>
+							<p class="block text-sm font-medium text-slate-700 mb-1">Estatus</p>
+							<select
+								id="status"
+								bind:value={status}
+								class="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition-all duration-200"
+							>
+								<option value="nuevo">Nuevo</option>
+								<option value="preparado">Preparado</option>
+								<option value="enviado">Enviado</option>
+								<option value="entregado">Entregado</option>
+								<option value="asignado">Asignado</option>
+								<option value="devuelto">Devuelto</option>
+								<option value="inactivo">Inactivo</option>
+							</select>
 						</div>
 
 						<div class="col-span-2 md:col-span-1">
 							<p class="block text-sm font-medium text-slate-700 mb-1">Cliente Asignado</p>
-							<div class="p-2 bg-slate-50 rounded text-slate-900">
+							<div class="p-2 bg-slate-50 rounded text-slate-900 h-10 flex items-center">
 								{clientId || 'Sin asignar'}
 							</div>
 						</div>

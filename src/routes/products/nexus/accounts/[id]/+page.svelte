@@ -26,23 +26,23 @@
 
 			const clientData = await ClientsService.getById(clientId);
 
-			client = clientData;
-			// Filter devices for this client.
-			// Note: The internal API might not return client_id if we fetch all devices as admin without filter.
-			// DevicesService.getAll() uses /api/v1/devices/ (admin).
-			// Assuming devices have client_id.
-			// Ideally we use a filtered fetch: DevicesService.getAll({client_id: clientId}) if supported.
-			// Let's assume we filter client-side if API doesn't support filter, but passing filter is safer.
-			// devices = devicesData.filter(d => d.client_id === clientId);
+			client = {
+				...clientData,
+				name: clientData.account_name,
+				// Ensure formattedCreated is set if we have created_at
+				formattedCreated: clientData.created_at
+					? new Date(clientData.created_at).toLocaleDateString()
+					: '-'
+			};
 
-			// Let's try to fetch scoped devices if possible or filter.
-			// DevicesService.getAll accepts filters.
-			const clientDevices = await DevicesService.getAll({ client_id: clientId });
-			devices = clientDevices || [];
-
-			// Format dates
-			if (client.created_at) {
-				client.formattedCreated = new Date(client.created_at).toLocaleDateString();
+			// DevicesService.getAll uses /api/v1/devices/ (admin).
+			// We try to filter by client_id if supported or just gracefully fail if no devices found.
+			try {
+				const clientDevices = await DevicesService.getAll({ client_id: clientId });
+				devices = clientDevices || [];
+			} catch (err) {
+				console.warn('Could not fetch devices for this account:', err);
+				devices = [];
 			}
 		} catch (error) {
 			console.error('Error fetching client details:', error);
@@ -59,7 +59,7 @@
 
 <div class="flex flex-col min-h-screen">
 	<Topbar
-		title={isLoading ? 'Cargando...' : `Nexus / Clientes / ${client?.name || 'Desconocido'}`}
+		title={isLoading ? 'Cargando...' : `Nexus / Cuentas / ${client?.name || 'Desconocido'}`}
 		backUrl="/products/nexus"
 	/>
 

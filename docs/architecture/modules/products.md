@@ -1,12 +1,14 @@
 # Módulo: Products
 
 ## 📌 Descripción
+
 Catálogo de productos y servicios.
 Permite listar productos disponibles y crear nuevos productos en el sistema.
 
 ---
 
 ## 👤 Actor
+
 - Usuario autenticado
 - Rol: user / admin (admin para crear)
 
@@ -16,16 +18,17 @@ Permite listar productos disponibles y crear nuevos productos en el sistema.
 
 ### 🔹 GAC API (Catálogo de productos)
 
-| Endpoint | Método | Uso |
-|--------|--------|-----|
-| /api/v1/products | GET | Listar todos los productos |
-| /api/v1/products | POST | Crear nuevo producto |
+| Endpoint         | Método | Uso                        |
+| ---------------- | ------ | -------------------------- |
+| /api/v1/products | GET    | Listar todos los productos |
+| /api/v1/products | POST   | Crear nuevo producto       |
 
 ---
 
 ## 🔁 Flujo funcional
 
 ### Listar Productos
+
 1. Usuario accede a catálogo de productos
 2. Se obtiene lista vía `GET /products`
 3. Se renderiza catálogo con:
@@ -37,6 +40,7 @@ Permite listar productos disponibles y crear nuevos productos en el sistema.
 4. Se permite búsqueda y filtrado (cliente)
 
 ### Crear Producto
+
 1. Admin accede a gestión de productos
 2. Hace clic en "Nuevo Producto"
 3. Completa formulario con:
@@ -50,6 +54,7 @@ Permite listar productos disponibles y crear nuevos productos en el sistema.
 5. Producto aparece en catálogo
 
 ### Seleccionar Producto para Orden
+
 1. Usuario está creando una orden
 2. Se muestra catálogo de productos
 3. Usuario selecciona productos
@@ -58,6 +63,7 @@ Permite listar productos disponibles y crear nuevos productos en el sistema.
 ---
 
 ## ⚠️ Consideraciones
+
 - Requiere token JWT válido (GAC API)
 - Solo administradores pueden crear productos
 - Los productos pueden estar activos o inactivos
@@ -72,6 +78,6 @@ Permite listar productos disponibles y crear nuevos productos en el sistema.
 - **Container:** Web App (Svelte)
 - **Consumes:** GAC API (productos)
 - **Component:** Products Module
-- **Related:** 
+- **Related:**
   - Orders (para crear órdenes con productos)
   - Inventory (gestión de stock - futuro)

@@ -1,12 +1,14 @@
 # Módulo: Dashboard
 
 ## 📌 Descripción
+
 Vista principal del usuario.
 Muestra estado general, métricas y accesos rápidos a módulos del sistema (Nexus, Usuarios).
 
 ---
 
 ## 👤 Actor
+
 - Usuario autenticado
 - Rol: user / admin
 
@@ -16,18 +18,18 @@ Muestra estado general, métricas y accesos rápidos a módulos del sistema (Nex
 
 ### 🔹 SISCOM Admin API (Datos Nexus)
 
-| Endpoint | Método | Uso |
-|--------|--------|-----|
-| /api/v1/devices/ | GET | Obtener lista de dispositivos |
-| /api/v1/internal/clients/stats | GET | Estadísticas de clientes Nexus |
+| Endpoint                       | Método | Uso                            |
+| ------------------------------ | ------ | ------------------------------ |
+| /api/v1/devices/               | GET    | Obtener lista de dispositivos  |
+| /api/v1/internal/clients/stats | GET    | Estadísticas de clientes Nexus |
 
 ---
 
 ### 🔹 GAC API (Datos administrativos)
 
-| Endpoint | Método | Uso |
-|--------|--------|-----|
-| /api/v1/users | GET | Obtener lista de usuarios internos |
+| Endpoint      | Método | Uso                                |
+| ------------- | ------ | ---------------------------------- |
+| /api/v1/users | GET    | Obtener lista de usuarios internos |
 
 ---
 
@@ -47,6 +49,7 @@ Muestra estado general, métricas y accesos rápidos a módulos del sistema (Nex
 ---
 
 ## ⚠️ Consideraciones
+
 - Depende de token JWT válido (GAC API)
 - Depende de token PASETO válido (SISCOM Admin API)
 - Las llamadas se realizan en paralelo para optimizar carga
@@ -58,7 +61,7 @@ Muestra estado general, métricas y accesos rápidos a módulos del sistema (Nex
 ## 🧭 Relación C4 (preview)
 
 - **Container:** Web App (Svelte)
-- **Consumes:** 
+- **Consumes:**
   - SISCOM Admin API (dispositivos, clientes)
   - GAC API (usuarios)
 - **Component:** Dashboard View (`/routes/+page.svelte`)

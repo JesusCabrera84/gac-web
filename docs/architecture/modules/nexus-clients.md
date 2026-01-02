@@ -1,12 +1,14 @@
 # Módulo: Nexus Clients
 
 ## 📌 Descripción
+
 Gestión de clientes del sistema Nexus.
 Permite listar, consultar y obtener estadísticas de clientes que utilizan servicios de telemática GPS.
 
 ---
 
 ## 👤 Actor
+
 - Usuario autenticado con acceso a Nexus
 - Rol: user / admin
 
@@ -16,13 +18,14 @@ Permite listar, consultar y obtener estadísticas de clientes que utilizan servi
 
 ### 🔹 SISCOM Admin API (Gestión de clientes)
 
-| Endpoint | Método | Uso |
-|--------|--------|-----|
-| /api/v1/internal/clients | GET | Listar clientes con filtros |
-| /api/v1/internal/clients/stats | GET | Obtener estadísticas de clientes |
-| /api/v1/internal/clients/{id} | GET | Obtener detalles de un cliente |
+| Endpoint                       | Método | Uso                              |
+| ------------------------------ | ------ | -------------------------------- |
+| /api/v1/internal/clients       | GET    | Listar clientes con filtros      |
+| /api/v1/internal/clients/stats | GET    | Obtener estadísticas de clientes |
+| /api/v1/internal/clients/{id}  | GET    | Obtener detalles de un cliente   |
 
 **Parámetros de consulta (GET /internal/clients):**
+
 - `limit`: Número máximo de resultados (default: 100)
 - Otros filtros personalizados según necesidad
 
@@ -31,6 +34,7 @@ Permite listar, consultar y obtener estadísticas de clientes que utilizan servi
 ## 🔁 Flujo funcional
 
 ### Dashboard de Clientes
+
 1. Usuario accede a `/products/nexus`
 2. Se realizan llamadas en paralelo:
    - `ClientsService.getAll({ limit: 100 })` → Lista de clientes
@@ -45,12 +49,14 @@ Permite listar, consultar y obtener estadísticas de clientes que utilizan servi
    - Número de dispositivos asignados
 
 ### Ver Detalle de Cliente
+
 1. Usuario hace clic en un cliente
 2. Se navega a `/products/nexus/clients/{id}`
 3. Se obtiene detalle vía `GET /internal/clients/{id}`
 4. Se muestran datos completos del cliente
 
 ### Búsqueda de Clientes
+
 1. Usuario escribe en campo de búsqueda
 2. Se filtra lista localmente por nombre
 3. Se actualiza tabla en tiempo real
@@ -58,6 +64,7 @@ Permite listar, consultar y obtener estadísticas de clientes que utilizan servi
 ---
 
 ## ⚠️ Consideraciones
+
 - Requiere token PASETO válido (autenticación interna)
 - Los clientes pueden tener estados: ACTIVE, PENDING, SUSPENDED
 - La creación de clientes no está disponible en este módulo (registro público)

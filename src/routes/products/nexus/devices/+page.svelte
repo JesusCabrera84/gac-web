@@ -4,6 +4,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	// import Card from '$lib/components/ui/Card.svelte';
 	import CommandPanel from '$lib/components/nexus/CommandPanel.svelte';
+	import AssignmentPanel from '$lib/components/nexus/AssignmentPanel.svelte';
 	import { DevicesService } from '$lib/services/devices';
 	import { TripsService } from '$lib/services/trips';
 	import { goto } from '$app/navigation';
@@ -29,7 +30,12 @@
 	let searchTerm = $state('');
 	/** @type {string | null} */
 	let selectedDeviceId = $state(null);
-	let activeTab = $state('commands'); // 'commands' or 'communications'
+	let activeTab = $state('commands'); // 'commands', 'communications', or 'assignment'
+
+	/** @type {string[]} */
+	let selectedDevicesForAssignment = $state([]);
+	let isAssignmentMode = $state(false);
+
 	let selectedDate = $state('');
 	/** @type {string | null} */
 	let lastCommunicationTime = $state(null);
@@ -165,6 +171,42 @@
 	// Handle device selection or tab change
 	/** @type {string | null} */
 	let streamDeviceId = $state(null);
+
+	function toggleAssignmentMode() {
+		isAssignmentMode = !isAssignmentMode;
+		if (!isAssignmentMode) {
+			selectedDevicesForAssignment = [];
+			if (activeTab === 'assignment') activeTab = 'commands';
+		} else {
+			// When entering assignment mode, if we have a selected device that is 'new', auto-select it?
+			// User requested: "seleccionar varios equipos, siempre y cuando su estatus sea nuevo"
+			// The table logic will handle selection.
+			// Clear single selection to focus on batch assignment? Maybe not necessary but cleaner.
+			selectedDeviceId = null;
+			activeTab = 'assignment';
+		}
+	}
+
+	/** @param {string} deviceId */
+	function toggleDeviceSelection(deviceId) {
+		if (selectedDevicesForAssignment.includes(deviceId)) {
+			selectedDevicesForAssignment = selectedDevicesForAssignment.filter((id) => id !== deviceId);
+		} else {
+			selectedDevicesForAssignment = [...selectedDevicesForAssignment, deviceId];
+		}
+	}
+
+	function selectAllNewDevices() {
+		// filter filteredDevices for 'new' status
+		const newDevices = filteredDevices
+			.filter((d) => d.status === 'nuevo')
+			.map((d) => d.device_id || '');
+		if (selectedDevicesForAssignment.length === newDevices.length && newDevices.length > 0) {
+			selectedDevicesForAssignment = [];
+		} else {
+			selectedDevicesForAssignment = newDevices;
+		}
+	}
 
 	$effect(() => {
 		console.log(
@@ -487,6 +529,13 @@
 
 	/** @param {Device} device */
 	function handleRowClick(device) {
+		if (isAssignmentMode) {
+			if (device.status === 'nuevo' && device.device_id) {
+				toggleDeviceSelection(device.device_id);
+			}
+			return;
+		}
+
 		if (selectedDeviceId === device.device_id) {
 			selectedDeviceId = null; // Deselect if already selected
 		} else {
@@ -601,6 +650,14 @@
 				Nuevo Dispositivo
 			</Button>
 		</a>
+		<Button
+			variant={isAssignmentMode ? 'secondary' : 'outline'}
+			size="sm"
+			class="ml-2"
+			onclick={toggleAssignmentMode}
+		>
+			{isAssignmentMode ? 'Cancelar Asignación' : 'Asignar Dispositivos'}
+		</Button>
 	</Topbar>
 
 	<div class="flex flex-col flex-1 overflow-hidden">
@@ -625,6 +682,22 @@
 						class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 sticky top-0"
 					>
 						<tr>
+							{#if isAssignmentMode}
+								<th class="px-6 py-2 w-10">
+									<input
+										type="checkbox"
+										class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+										checked={filteredDevices.filter((d) => d.status === 'nuevo').length > 0 &&
+											selectedDevicesForAssignment.length ===
+												filteredDevices.filter((d) => d.status === 'nuevo').length}
+										onclick={(e) => {
+											e.stopPropagation();
+											selectAllNewDevices();
+										}}
+										disabled={filteredDevices.filter((d) => d.status === 'nuevo').length === 0}
+									/>
+								</th>
+							{/if}
 							<th class="px-6 py-2">ID Dispositivo</th>
 							<th class="px-6 py-2">ICCID</th>
 							<th class="px-6 py-2">Marca / Modelo</th>
@@ -637,7 +710,7 @@
 					<tbody class="divide-y divide-slate-100">
 						{#if isLoading}
 							<tr>
-								<td colspan="7" class="px-6 py-8 text-center text-slate-500">
+								<td colspan={isAssignmentMode ? 8 : 7} class="px-6 py-8 text-center text-slate-500">
 									Cargando dispositivos...
 								</td>
 							</tr>
@@ -655,6 +728,21 @@
 										: 'hover:bg-slate-50'}"
 									onclick={() => handleRowClick(device)}
 								>
+									{#if isAssignmentMode}
+										<td class="px-6 py-2 text-center" onclick={(e) => e.stopPropagation()}>
+											<input
+												type="checkbox"
+												class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+												checked={!!device.device_id &&
+													selectedDevicesForAssignment.includes(device.device_id)}
+												disabled={device.status !== 'nuevo'}
+												onclick={() =>
+													device.status === 'nuevo' &&
+													device.device_id &&
+													toggleDeviceSelection(device.device_id)}
+											/>
+										</td>
+									{/if}
 									<td class="px-6 py-2 font-medium text-slate-900">
 										{device.device_id}
 									</td>
@@ -717,7 +805,18 @@
 
 		<!-- Bottom Panel: Tabs & Content -->
 		<div class="flex-1 flex flex-col bg-slate-50">
-			{#if !selectedDeviceId}
+			{#if isAssignmentMode}
+				<div class="flex-1 overflow-hidden bg-white">
+					<AssignmentPanel
+						selectedDevices={selectedDevicesForAssignment}
+						onClose={() => toggleAssignmentMode()}
+						onSuccess={async () => {
+							await loadDevices();
+							toggleAssignmentMode();
+						}}
+					/>
+				</div>
+			{:else if !selectedDeviceId}
 				<div class="flex flex-col items-center justify-center h-full text-slate-400">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"

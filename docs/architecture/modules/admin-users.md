@@ -1,12 +1,14 @@
 # Módulo: Admin Users
 
 ## 📌 Descripción
+
 Gestión de usuarios internos del sistema GAC.
 Permite crear, listar, editar y eliminar usuarios, así como asignar y revocar roles.
 
 ---
 
 ## 👤 Actor
+
 - Administrador del sistema
 - Rol: admin
 
@@ -16,29 +18,31 @@ Permite crear, listar, editar y eliminar usuarios, así como asignar y revocar r
 
 ### 🔹 GAC API (Gestión de usuarios)
 
-| Endpoint | Método | Uso |
-|--------|--------|-----|
-| /api/v1/users | GET | Listar usuarios (con paginación) |
-| /api/v1/users | POST | Crear nuevo usuario |
-| /api/v1/users/{user_id} | GET | Obtener detalles de un usuario |
-| /api/v1/users/{user_id} | PATCH | Actualizar usuario |
-| /api/v1/users/{user_id} | DELETE | Eliminar usuario (soft delete) |
-| /api/v1/roles | GET | Listar roles disponibles |
-| /api/v1/roles | POST | Crear nuevo rol |
-| /api/v1/users/{user_id}/roles/{role_id} | POST | Asignar rol a usuario |
-| /api/v1/users/{user_id}/roles/{role_id} | DELETE | Revocar rol de usuario |
+| Endpoint                                | Método | Uso                              |
+| --------------------------------------- | ------ | -------------------------------- |
+| /api/v1/users                           | GET    | Listar usuarios (con paginación) |
+| /api/v1/users                           | POST   | Crear nuevo usuario              |
+| /api/v1/users/{user_id}                 | GET    | Obtener detalles de un usuario   |
+| /api/v1/users/{user_id}                 | PATCH  | Actualizar usuario               |
+| /api/v1/users/{user_id}                 | DELETE | Eliminar usuario (soft delete)   |
+| /api/v1/roles                           | GET    | Listar roles disponibles         |
+| /api/v1/roles                           | POST   | Crear nuevo rol                  |
+| /api/v1/users/{user_id}/roles/{role_id} | POST   | Asignar rol a usuario            |
+| /api/v1/users/{user_id}/roles/{role_id} | DELETE | Revocar rol de usuario           |
 
 ---
 
 ## 🔁 Flujo funcional
 
 ### Listar Usuarios
+
 1. Usuario admin accede a `/admin/internal-users`
 2. Se obtiene lista de usuarios vía `GET /users?skip=0&limit=100`
 3. Se renderiza tabla con usuarios
 4. Se permite búsqueda y filtrado (cliente)
 
 ### Crear Usuario
+
 1. Admin hace clic en "Nuevo Usuario"
 2. Completa formulario con:
    - Email
@@ -50,6 +54,7 @@ Permite crear, listar, editar y eliminar usuarios, así como asignar y revocar r
 4. Se redirige a lista de usuarios
 
 ### Editar Usuario
+
 1. Admin selecciona usuario de la lista
 2. Se carga detalle vía `GET /users/{id}`
 3. Se muestra formulario pre-llenado
@@ -58,6 +63,7 @@ Permite crear, listar, editar y eliminar usuarios, así como asignar y revocar r
 6. Se actualiza vista
 
 ### Gestión de Roles
+
 1. Admin accede a sección de roles
 2. Se listan roles vía `GET /roles`
 3. Puede crear nuevos roles vía `POST /roles`
@@ -66,6 +72,7 @@ Permite crear, listar, editar y eliminar usuarios, así como asignar y revocar r
 ---
 
 ## ⚠️ Consideraciones
+
 - Requiere rol de administrador
 - Las eliminaciones son soft deletes (no se borran físicamente)
 - Los passwords deben cumplir política de seguridad

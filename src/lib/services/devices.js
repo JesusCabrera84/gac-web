@@ -147,6 +147,24 @@ export const DevicesService = {
 	},
 
 	/**
+	 * Assign device to organization
+	 * @param {string} id
+	 * @param {string} organizationId
+	 * @param {string} [status]
+	 * @returns {Promise<Object>}
+	 */
+	async assignOrganization(id, organizationId, status = 'preparado') {
+		/** @type {any} */
+		const payload = { organization_id: organizationId };
+		if (status) payload.status = status;
+
+		return this.api(`/api/v1/devices/${id}`, {
+			method: 'PATCH',
+			body: JSON.stringify(payload)
+		});
+	},
+
+	/**
 	 * Get latest communication for a specific device
 	 * Uses the PUBLIC_SISCOM_API_URL instead of admin
 	 * @param {string} id

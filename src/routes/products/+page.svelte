@@ -2,7 +2,7 @@
 	import Topbar from '$lib/components/layout/Topbar.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import { productService } from '$lib/services/products';
+	import { ProductsService } from '$lib/services/products';
 	import { onMount } from 'svelte';
 
 	/** @type {any[]} */
@@ -12,16 +12,11 @@
 	async function loadProducts() {
 		isLoading = true;
 		try {
-			const apiProducts = await productService.getProducts();
+			const apiProducts = await ProductsService.getAll();
 
-			// The API returns { data: [...] } or just [...]?
-			// Based on previous auth response, it might be wrapped in data.
-			// Let's handle both just in case, or assume array if not wrapped.
-			// Actually, api.js returns response.json().
-			// If the backend follows the same pattern as auth, it might be { data: [...] }.
-			// Let's assume it returns the list directly or inside data.
+			// ProductsService.getAll() returns { products: [...] }
 
-			const list = Array.isArray(apiProducts) ? apiProducts : apiProducts.data || [];
+			const list = apiProducts.products || [];
 
 			if (list && list.length > 0) {
 				products = list.map((/** @type {any} */ p) => ({

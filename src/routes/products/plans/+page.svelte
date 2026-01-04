@@ -10,13 +10,20 @@
 	let plans = $state([]);
 	let isLoading = $state(true);
 	let searchTerm = $state('');
+	let productFilter = $state(''); // Filter by product code
 	/** @type {string | null} */
 	let selectedPlanId = $state(null);
 
 	let filteredPlans = $derived(
 		plans.filter((p) => {
 			const term = searchTerm.toLowerCase();
-			return p.name.toLowerCase().includes(term) || p.code.toLowerCase().includes(term);
+			const matchesSearch =
+				p.name.toLowerCase().includes(term) || p.code.toLowerCase().includes(term);
+
+			if (!productFilter) return matchesSearch;
+
+			const hasProduct = (p.products || []).some((prod) => prod.code === productFilter);
+			return matchesSearch && hasProduct;
 		})
 	);
 
@@ -70,15 +77,30 @@
 	<div class="flex flex-col flex-1 overflow-hidden">
 		<!-- Top Panel: Plans Table (40%) -->
 		<div class="h-[40%] flex flex-col border-b border-slate-200 bg-white">
-			<div class="p-4 border-b border-slate-100 flex justify-between items-center bg-white z-10">
-				<div class="w-full md:w-1/2">
-					<Input
-						placeholder="Filtrar por nombre o código..."
-						bind:value={searchTerm}
-						class="w-full"
-					/>
+			<div
+				class="p-4 border-b border-slate-100 flex justify-between items-center bg-white z-10 gap-4"
+			>
+				<div class="flex gap-3 flex-1">
+					<div class="flex-1">
+						<Input
+							placeholder="Filtrar por nombre o código..."
+							bind:value={searchTerm}
+							class="w-full"
+						/>
+					</div>
+					<div class="w-64">
+						<select
+							bind:value={productFilter}
+							class="w-full h-9 px-3 py-1 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+						>
+							<option value="">Todos los productos</option>
+							{#each [...new Set(plans.flatMap( (p) => (p.products || []).map( (prod) => ({ code: prod.code, name: prod.name }) ) ))] as product (product.code)}
+								<option value={product.code}>{product.name}</option>
+							{/each}
+						</select>
+					</div>
 				</div>
-				<Button variant="ghost" size="sm" onclick={loadPlans} disabled={isLoading} class="ml-2">
+				<Button variant="ghost" size="sm" onclick={loadPlans} disabled={isLoading}>
 					Actualizar
 				</Button>
 			</div>
@@ -91,6 +113,7 @@
 						<tr>
 							<th class="px-6 py-3">Nombre</th>
 							<th class="px-6 py-3">Código</th>
+							<th class="px-6 py-3">Producto</th>
 							<th class="px-6 py-3">Precio Mensual</th>
 							<th class="px-6 py-3">Precio Anual</th>
 							<th class="px-6 py-3">Estado</th>
@@ -99,13 +122,13 @@
 					<tbody class="divide-y divide-slate-100">
 						{#if isLoading}
 							<tr>
-								<td colspan="5" class="px-6 py-8 text-center text-slate-500">
+								<td colspan="7" class="px-6 py-8 text-center text-slate-500">
 									Cargando planes...
 								</td>
 							</tr>
 						{:else if filteredPlans.length === 0}
 							<tr>
-								<td colspan="5" class="px-6 py-8 text-center text-slate-500">
+								<td colspan="7" class="px-6 py-8 text-center text-slate-500">
 									No se encontraron planes.
 								</td>
 							</tr>
@@ -122,6 +145,13 @@
 									</td>
 									<td class="px-6 py-3 text-slate-600 font-mono text-xs uppercase">
 										{plan.code}
+									</td>
+									<td class="px-6 py-3 text-slate-600">
+										{#if plan.products && plan.products.length > 0}
+											<span class="text-sm">{plan.products[0].name}</span>
+										{:else}
+											<span class="text-xs text-slate-400">Sin producto</span>
+										{/if}
 									</td>
 									<td class="px-6 py-3 text-slate-600">
 										${plan.price_monthly}

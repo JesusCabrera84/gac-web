@@ -6,6 +6,7 @@
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth';
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
+	import Toast from '$lib/components/ui/Toast.svelte';
 
 	let { children } = $props();
 
@@ -28,6 +29,8 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
+
+<Toast />
 
 <div
 	class="min-h-screen font-sans {isLoginPage

@@ -3,6 +3,8 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import { PlansService } from '$lib/services/plans';
+	import { ProductsService } from '$lib/services/products';
+	import { toast } from '$lib/stores/toast';
 
 	/** @type {{
 	 * 	plan: import('$lib/services/plans').Plan,
@@ -13,7 +15,6 @@
 	/** @type {import('$lib/services/plans').Plan} */
 	let plan = $state(JSON.parse(JSON.stringify(initialPlan)));
 	let isSaving = $state(false);
-	let error = $state(null);
 
 	// Catalogs
 	/** @type {any[]} */
@@ -24,19 +25,21 @@
 	// Local state for easier binding
 	/** @type {Object.<string, any>} */
 	let capabilityValues = $state({});
-	/** @type {string[]} */
-	let productCodes = $state([]);
+	/** @type {string} */
+	let selectedProductCode = $state('');
 
 	onMount(async () => {
 		try {
-			const [products, caps] = await Promise.all([
-				PlansService.getAvailableProducts(),
+			const [productsResponse, caps] = await Promise.all([
+				ProductsService.getAll({ is_active: true }),
 				PlansService.getAvailableCapabilities()
 			]);
-			availableProducts = products;
+			availableProducts = productsResponse.products || [];
 			availableCapabilities = caps;
 		} catch (err) {
 			console.error('Error loading catalogs:', err);
+			// @ts-ignore
+			toast.error('Error al cargar catálogos: ' + err.message);
 		}
 	});
 
@@ -47,8 +50,9 @@
 			// Use untrack to prevent infinite loops
 			untrack(() => {
 				plan = JSON.parse(JSON.stringify(initialPlan));
-				// Initialize product codes
-				productCodes = (plan.products || []).map((p) => p.code);
+				// Initialize selected product code (single product)
+				const products = plan.products || [];
+				selectedProductCode = products.length > 0 ? products[0].code : '';
 				// Initialize capability values
 				const vals = {};
 				(plan.capabilities || []).forEach((c) => {
@@ -60,11 +64,16 @@
 		}
 	});
 
-	/** @param {SubmitEvent} e */
 	async function handleSubmit(e) {
 		e.preventDefault();
+
+		// Validate product selection
+		if (!selectedProductCode) {
+			toast.error('Debe seleccionar un producto antes de guardar');
+			return;
+		}
+
 		isSaving = true;
-		error = null;
 
 		try {
 			// Prepare data for PATCH
@@ -75,7 +84,7 @@
 				price_monthly: plan.price_monthly,
 				price_yearly: plan.price_yearly,
 				is_active: plan.is_active,
-				product_codes: productCodes,
+				product_codes: [selectedProductCode],
 				capabilities: Object.entries(capabilityValues).map(([code, value]) => {
 					const def = availableCapabilities.find((d) => d.code === code);
 					/** @type {any} */
@@ -88,11 +97,12 @@
 			};
 
 			await PlansService.update(plan.id, updateData);
+			toast.success('Plan actualizado exitosamente');
 			if (onSave) onSave();
 		} catch (err) {
 			console.error('Error updating plan:', err);
 			// @ts-ignore
-			error = err.message || 'Error al guardar el plan';
+			toast.error('Error al guardar el plan: ' + err.message);
 		} finally {
 			isSaving = false;
 		}
@@ -116,12 +126,6 @@
 		</div>
 
 		<div class="flex-1 overflow-y-auto p-6 space-y-8">
-			{#if error}
-				<div class="p-3 bg-red-50 text-red-600 text-sm rounded-md border border-red-100">
-					{error}
-				</div>
-			{/if}
-
 			<!-- Basic Info -->
 			<section class="space-y-4">
 				<div class="flex items-center justify-between border-b pb-2">
@@ -161,26 +165,33 @@
 			<!-- Products -->
 			<section class="space-y-4">
 				<h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b pb-2">
-					Productos Asociados
+					Producto Asociado <span class="text-red-500">*</span>
 				</h4>
-				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+				{#if !selectedProductCode}
+					<p class="text-sm text-red-600">Debe seleccionar un producto antes de guardar el plan</p>
+				{/if}
+				<div class="space-y-3">
 					{#each availableProducts as product (product.code)}
 						<label
-							class="flex items-center p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors {productCodes.includes(
-								product.code
-							)
+							class="flex items-center p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors {selectedProductCode ===
+							product.code
 								? 'bg-blue-50 border-blue-200'
 								: ''}"
 						>
 							<input
-								type="checkbox"
+								type="radio"
+								name="product"
 								value={product.code}
-								bind:group={productCodes}
-								class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+								bind:group={selectedProductCode}
+								class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+								required
 							/>
 							<div class="ml-3">
 								<p class="text-sm font-medium text-slate-900">{product.name}</p>
 								<p class="text-xs text-slate-500">{product.code}</p>
+								{#if product.description}
+									<p class="text-xs text-slate-400 mt-1">{product.description}</p>
+								{/if}
 							</div>
 						</label>
 					{/each}

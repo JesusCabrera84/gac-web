@@ -6,6 +6,7 @@
 
 	const menuItems = [
 		{ href: '/', label: 'Dashboard', icon: 'LayoutDashboard' },
+		{ href: '/products/catalog', label: 'Productos', icon: 'Package' },
 		{ href: '/products/nexus', label: 'Nexus', icon: 'Smartphone' },
 		{ href: '/products/plans', label: 'Planes', icon: 'Tag' },
 		{
@@ -61,7 +62,7 @@
 	</button>
 
 	<nav class="flex-1 p-3 space-y-2 overflow-y-auto mt-2">
-		{#each menuItems as item (item.label)}
+		{#each menuItems as item, index (item.label)}
 			<a
 				href={item.href}
 				title={isCollapsed ? item.label : ''}
@@ -77,7 +78,22 @@
 						: 'text-slate-300 group-hover:text-white'}
 					{isCollapsed ? '' : 'mr-3'}"
 				>
-					{#if item.icon === 'LayoutDashboard'}
+					{#if item.icon === 'Package'}
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							><path d="m7.5 4.27 9 5.15" /><path
+								d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
+							/><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" /></svg
+						>
+					{:else if item.icon === 'LayoutDashboard'}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							width="20"
@@ -153,6 +169,11 @@
 					<span class="truncate">{item.label}</span>
 				{/if}
 			</a>
+
+			<!-- Divider after Dashboard -->
+			{#if index === 0}
+				<div class="my-3 border-t border-slate-700/30"></div>
+			{/if}
 		{/each}
 	</nav>
 

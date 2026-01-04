@@ -1,4 +1,10 @@
 import { get } from 'svelte/store';
+import { dev } from '$app/environment';
+import {
+	PUBLIC_GAC_API_URL,
+	PUBLIC_SISCOM_ADMIN_API_URL,
+	PUBLIC_SISCOM_API_URL
+} from '$env/static/public';
 
 /** @type {import('svelte/store').Writable<any>|null} */
 let authStore = null;
@@ -51,8 +57,9 @@ export async function api(endpoint, options = {}) {
 	const safeEndpoint = endpoint.replace(/\/$/, '');
 	const path = safeEndpoint.startsWith('/') ? safeEndpoint : `/${safeEndpoint}`;
 
-	// GAC Service (8090) via /api/gac proxy
-	const url = `/api/gac${path}`;
+	// In development: use Vite proxy (/api/gac)
+	// In production: use environment variable (PUBLIC_GAC_API_URL)
+	const url = dev ? `/api/gac${path}` : `${PUBLIC_GAC_API_URL}/api/v1${path}`;
 
 	try {
 		const response = await fetch(url, config);
@@ -128,11 +135,16 @@ export async function internalApi(endpoint, options = {}) {
 	const safeEndpoint = endpoint.replace(/\/$/, '');
 	const path = safeEndpoint.startsWith('/') ? safeEndpoint : `/${safeEndpoint}`;
 
-	// Routing logic based on service type via proxy
-	// admin -> :8000 via /api/admin
-	// public -> :8080 via /api/public
-	const prefix = service === 'public' ? '/api/public' : '/api/admin';
-	const url = `${prefix}${path}`;
+	// In development: use Vite proxy (/api/admin or /api/public)
+	// In production: use environment variables
+	let url;
+	if (dev) {
+		const prefix = service === 'public' ? '/api/public' : '/api/admin';
+		url = `${prefix}${path}`;
+	} else {
+		const baseUrl = service === 'public' ? PUBLIC_SISCOM_API_URL : PUBLIC_SISCOM_ADMIN_API_URL;
+		url = `${baseUrl}/api/v1${path}`;
+	}
 
 	try {
 		const response = await fetch(url, config);
@@ -208,8 +220,11 @@ export async function getInternalToken(serviceContext = 'nexus') {
 			throw new Error('No es posible obtener el token interno: No hay sesión activa.');
 		}
 
-		// GAC API (8090) via /api/gac proxy
-		const url = `/api/gac/internal/tokens/app`;
+		// In development: use Vite proxy (/api/gac)
+		// In production: use environment variable (PUBLIC_GAC_API_URL)
+		const url = dev
+			? `/api/gac/internal/tokens/app`
+			: `${PUBLIC_GAC_API_URL}/api/v1/internal/tokens/app`;
 
 		const response = await fetch(url, {
 			method: 'POST',

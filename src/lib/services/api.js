@@ -1,5 +1,4 @@
 import { get } from 'svelte/store';
-import { PUBLIC_GAC_API_URL, PUBLIC_SISCOM_ADMIN_API_URL, PUBLIC_SISCOM_API_URL } from '$env/static/public';
 
 /** @type {import('svelte/store').Writable<any>|null} */
 let authStore = null;
@@ -71,7 +70,7 @@ export async function api(endpoint, options = {}) {
 					...options,
 					headers: {
 						...headers,
-						'Authorization': `Bearer ${refreshedAuth.token}`
+						Authorization: `Bearer ${refreshedAuth.token}`
 					},
 					_skipRefresh: true
 				});
@@ -140,7 +139,9 @@ export async function internalApi(endpoint, options = {}) {
 
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}));
-			const msg = errorData.message || `Internal API Error [${service}]: ${response.status} ${response.statusText}`;
+			const msg =
+				errorData.message ||
+				`Internal API Error [${service}]: ${response.status} ${response.statusText}`;
 			throw new Error(msg);
 		}
 
@@ -213,7 +214,7 @@ export async function getInternalToken(serviceContext = 'nexus') {
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: {
-				'Authorization': `Bearer ${$auth.token}`
+				Authorization: `Bearer ${$auth.token}`
 			}
 		});
 

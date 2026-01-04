@@ -155,7 +155,7 @@
 								Productos Asociados
 							</h3>
 							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-								{#each availableProducts as product}
+								{#each availableProducts as product (product.code)}
 									<label
 										class="flex items-center p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors {productCodes.includes(
 											product.code
@@ -183,7 +183,7 @@
 								Capabilities & Límites
 							</h3>
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-								{#each availableCapabilities as cap}
+								{#each availableCapabilities as cap (cap.code)}
 									<div class="flex flex-col space-y-1">
 										<span class="text-xs font-medium text-slate-500" title={cap.description}>
 											{cap.code}

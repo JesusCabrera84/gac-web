@@ -17,6 +17,10 @@
 
 	/** @param {string} href */
 	function isActive(href) {
+		// Exact match for root path, startsWith for others
+		if (href === '/') {
+			return $page.url.pathname === '/';
+		}
 		return $page.url.pathname.startsWith(href);
 	}
 </script>

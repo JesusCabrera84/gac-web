@@ -33,9 +33,6 @@
 			/** @type {any} */
 			const data = response;
 			plans = Array.isArray(data) ? data : data.plans || [];
-			if (plans.length > 0 && !selectedPlanId) {
-				selectedPlanId = plans[0].id;
-			}
 		} catch (error) {
 			console.error('Error loading plans:', error);
 		} finally {

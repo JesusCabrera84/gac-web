@@ -1,5 +1,5 @@
 <script>
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -41,19 +41,23 @@
 		}
 	});
 
-	// Update local state when prop changes
+	// Update local state when prop changes (only when plan ID changes)
 	$effect(() => {
-		if (initialPlan) {
-			plan = JSON.parse(JSON.stringify(initialPlan));
-			// Initialize product codes
-			productCodes = (plan.products || []).map((p) => p.code);
-			// Initialize capability values
-			const vals = {};
-			(plan.capabilities || []).forEach((c) => {
-				// Use 'value' if present (from GET), otherwise fall back to value_int/bool
-				vals[c.capability_code] = c.value !== undefined ? c.value : (c.value_int ?? c.value_bool);
+		const planId = initialPlan?.id;
+		if (planId) {
+			// Use untrack to prevent infinite loops
+			untrack(() => {
+				plan = JSON.parse(JSON.stringify(initialPlan));
+				// Initialize product codes
+				productCodes = (plan.products || []).map((p) => p.code);
+				// Initialize capability values
+				const vals = {};
+				(plan.capabilities || []).forEach((c) => {
+					// Use 'value' if present (from GET), otherwise fall back to value_int/bool
+					vals[c.capability_code] = c.value !== undefined ? c.value : (c.value_int ?? c.value_bool);
+				});
+				capabilityValues = vals;
 			});
-			capabilityValues = vals;
 		}
 	});
 

@@ -1,14 +1,35 @@
 import { get } from 'svelte/store';
-import { auth } from '$lib/stores/auth';
-import { PUBLIC_GAC_API_URL, PUBLIC_SISCOM_ADMIN_API_URL } from '$env/static/public';
+import { PUBLIC_GAC_API_URL, PUBLIC_SISCOM_ADMIN_API_URL, PUBLIC_SISCOM_API_URL } from '$env/static/public';
+
+/** @type {import('svelte/store').Writable<any>|null} */
+let authStore = null;
 
 /**
+ * Initializes the API service with the auth store.
+ * This helps break circular dependencies.
+ * @param {import('svelte/store').Writable<any>} store
+ */
+export function initApi(store) {
+	authStore = store;
+}
+
+/** @type {Promise<boolean>|null} */
+let refreshPromise = null;
+
+/**
+ * Enhanced fetch wrapper with automatic token refresh
  * @param {string} endpoint
- * @param {RequestInit} [options]
+ * @param {RequestInit & { _skipRefresh?: boolean }} [options]
  * @returns {Promise<any>}
  */
 export async function api(endpoint, options = {}) {
-	const $auth = get(auth);
+	if (!authStore) {
+		throw new Error('API Service not initialized. Call initApi(auth) first.');
+	}
+
+	const skipRefresh = options._skipRefresh || false;
+	const $auth = get(authStore);
+
 	/** @type {any} */
 	const headers = {
 		'Content-Type': 'application/json',
@@ -28,39 +49,137 @@ export async function api(endpoint, options = {}) {
 		headers
 	};
 
-	// Ensure endpoint starts with / and remove trailing slash
 	const safeEndpoint = endpoint.replace(/\/$/, '');
 	const path = safeEndpoint.startsWith('/') ? safeEndpoint : `/${safeEndpoint}`;
 
-	// Remove trailing slash from base URL if present
-	const baseUrl = PUBLIC_GAC_API_URL.replace(/\/$/, '');
+	// GAC Service (8090) via /api/gac proxy
+	const url = `/api/gac${path}`;
 
-	// Construct URL with /api/v1 prefix
-	const url = `${baseUrl}/api/v1${path}`;
+	try {
+		const response = await fetch(url, config);
+
+		if (response.status === 401 && $auth.refreshToken && !skipRefresh) {
+			if (!refreshPromise) {
+				refreshPromise = performRefresh();
+			}
+
+			const isRefreshed = await refreshPromise;
+
+			if (isRefreshed) {
+				const refreshedAuth = get(authStore);
+				return api(endpoint, {
+					...options,
+					headers: {
+						...headers,
+						'Authorization': `Bearer ${refreshedAuth.token}`
+					},
+					_skipRefresh: true
+				});
+			} else {
+				throw new Error('Sesión expirada');
+			}
+		}
+
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({}));
+			throw new Error(errorData.message || `API Error: ${response.statusText}`);
+		}
+
+		if (response.status === 204) return null;
+		return await response.json();
+	} catch (error) {
+		if (!skipRefresh) {
+			console.error(`API Request Failed: ${endpoint}`, error);
+		}
+		throw error;
+	}
+}
+
+/**
+ * Enhanced fetch wrapper for internal APIs requiring PASETO tokens
+ * @param {string} endpoint
+ * @param {RequestInit & { service?: 'admin' | 'public' }} [options]
+ * @returns {Promise<any>}
+ */
+export async function internalApi(endpoint, options = {}) {
+	const service = options.service || 'admin';
+	let token;
+	try {
+		token = await getInternalToken('nexus');
+	} catch (err) {
+		console.error('Failed to satisfy internal authentication:', err);
+		throw new Error('No se pudo autenticar con el servicio interno');
+	}
+
+	/** @type {any} */
+	const headers = {
+		Authorization: `Bearer ${token}`,
+		...options.headers
+	};
+
+	if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+		headers['Content-Type'] = 'application/json';
+	}
+
+	const config = {
+		...options,
+		headers
+	};
+
+	const safeEndpoint = endpoint.replace(/\/$/, '');
+	const path = safeEndpoint.startsWith('/') ? safeEndpoint : `/${safeEndpoint}`;
+
+	// Routing logic based on service type via proxy
+	// admin -> :8000 via /api/admin
+	// public -> :8080 via /api/public
+	const prefix = service === 'public' ? '/api/public' : '/api/admin';
+	const url = `${prefix}${path}`;
 
 	try {
 		const response = await fetch(url, config);
 
 		if (!response.ok) {
-			// Handle 401 Unauthorized - maybe logout?
-			if (response.status === 401) {
-				console.warn('Unauthorized access, logging out...');
-				// auth.logout(); // Circular dependency if we import logout directly, handle in component or separate logic
-			}
 			const errorData = await response.json().catch(() => ({}));
-			throw new Error(errorData.message || `API Error: ${response.statusText}`);
+			const msg = errorData.message || `Internal API Error [${service}]: ${response.status} ${response.statusText}`;
+			throw new Error(msg);
 		}
 
-		// Return null for 204 No Content
-		if (response.status === 204) {
-			return null;
-		}
-
+		if (response.status === 204) return null;
 		return await response.json();
 	} catch (error) {
-		console.error('API Request Failed:', error);
+		console.error(`Internal API Request Failed [${service}]: ${endpoint}`, error);
 		throw error;
 	}
+}
+
+/**
+ * Internal function to handle the refresh process and prevent race conditions
+ * @returns {Promise<boolean>}
+ */
+async function performRefresh() {
+	if (!authStore) return false;
+	const currentAuth = get(authStore);
+	if (!currentAuth.refreshToken) return false;
+
+	try {
+		const response = await api(`auth/refresh?refresh_token=${currentAuth.refreshToken}`, {
+			method: 'POST',
+			_skipRefresh: true
+		});
+
+		const newToken = response.data?.access_token;
+
+		if (newToken) {
+			authStore.update((s) => ({ ...s, token: newToken }));
+			return true;
+		}
+	} catch (error) {
+		console.error('Session refresh failed:', error);
+		authStore.set({ token: null, refreshToken: null, user: null, isAuthenticated: false });
+	} finally {
+		refreshPromise = null;
+	}
+	return false;
 }
 
 // Cache for internal tokens: serviceKey -> { token, expiration }
@@ -68,58 +187,34 @@ const internalTokenCache = new Map();
 
 /**
  * Retrieves a valid internal token (PASETO) for a specific service/role context.
- *
- * For Nexus services, we use the 'gac' service identity with 'NEXUS_ADMIN' role.
- *
- * @param {string} [serviceContext='nexus'] - Context identifier to map to actual credentials
+ * @param {string} [serviceContext='nexus']
  * @returns {Promise<string>}
  */
 export async function getInternalToken(serviceContext = 'nexus') {
 	const now = Date.now();
-	const cacheKey = serviceContext; // e.g., 'nexus'
+	const cacheKey = serviceContext;
 	const cached = internalTokenCache.get(cacheKey);
 
-	// Use cached token if valid (buffer of 30 seconds before expiration)
 	if (cached && now < cached.expiration - 30 * 1000) {
 		return cached.token;
 	}
 
 	try {
-		console.log(`Fetching new internal token for context: ${serviceContext}...`);
+		if (!authStore) throw new Error('API Service not initialized');
+		const $auth = get(authStore);
 
-		// Map context to API credentials
-		// Currently only handling 'nexus' context as per requirements
-		const $auth = get(auth);
-		// Robustly try to find the email, handling potential unexpected nesting
-		const userEmail = $auth.user?.email || $auth.user?.data?.email;
-
-		if (!userEmail) {
-			const errorMsg =
-				'No es posible obtener el token interno: El usuario no tiene email registrado o no hay sesión activa.';
-			console.error(errorMsg);
-			throw new Error(errorMsg);
+		if (!$auth.token) {
+			throw new Error('No es posible obtener el token interno: No hay sesión activa.');
 		}
 
-		let payload = {
-			email: userEmail,
-			service: 'gac',
-			role: 'NEXUS_ADMIN',
-			expires_in_hours: 24
-		};
-
-		// If we ever need other contexts, we can switch/map here.
-		// For now, regardless of input 'nexus', we use these creds.
-
-		// Use PUBLIC_SISCOM_ADMIN_API_URL for internal auth
-		const baseUrl = (PUBLIC_SISCOM_ADMIN_API_URL || '').replace(/\/$/, '');
-		const url = `${baseUrl}/api/v1/auth/internal`;
+		// GAC API (8090) via /api/gac proxy
+		const url = `/api/gac/internal/tokens/app`;
 
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(payload)
+				'Authorization': `Bearer ${$auth.token}`
+			}
 		});
 
 		if (!response.ok) {
@@ -127,16 +222,12 @@ export async function getInternalToken(serviceContext = 'nexus') {
 			throw new Error(errorData.message || `Auth API Error: ${response.statusText}`);
 		}
 
-		const data = await response.json();
+		const json = await response.json();
 
-		if (data && data.token) {
-			const token = data.token;
-			// user might return expires_at ISO string
-			const expiresAt = data.expires_at
-				? new Date(data.expires_at).getTime()
-				: now + 24 * 60 * 60 * 1000;
+		if (json && json.data) {
+			const token = json.data;
+			const expiresAt = now + 5 * 60 * 1000;
 
-			// Cache it
 			internalTokenCache.set(cacheKey, {
 				token,
 				expiration: expiresAt
@@ -144,7 +235,7 @@ export async function getInternalToken(serviceContext = 'nexus') {
 
 			return token;
 		} else {
-			throw new Error(`Invalid response from internal auth endpoint`);
+			throw new Error(`Invalid response from internal auth endpoint: missing data`);
 		}
 	} catch (error) {
 		console.error(`Failed to get internal token for ${serviceContext}:`, error);

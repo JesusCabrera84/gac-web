@@ -26,6 +26,10 @@ const startState = storedAuth ? JSON.parse(storedAuth) : initialState;
 
 export const auth = writable(startState);
 
+// BREAK CIRCULAR DEPENDENCY: Initialize API with the store
+import { initApi } from '$lib/services/api';
+initApi(auth);
+
 auth.subscribe((value) => {
 	if (browser) {
 		localStorage.setItem(STORE_KEY, JSON.stringify(value));
@@ -46,7 +50,7 @@ export const login = async (email, password) => {
 		formData.append('username', email);
 		formData.append('password', password);
 
-		const response = await api('auth/login', {
+		const response = await api('/auth/login', {
 			method: 'POST',
 			body: formData
 		});
@@ -64,7 +68,7 @@ export const login = async (email, password) => {
 		// Temporarily set token to fetch user profile
 		auth.update((s) => ({ ...s, token }));
 
-		const userProfile = await api('auth/me', {
+		const userProfile = await api('/auth/me', {
 			method: 'GET'
 		});
 
@@ -88,7 +92,7 @@ export const refreshSession = async () => {
 
 	try {
 		// POST /auth/refresh?refresh_token=...
-		const response = await api(`auth/refresh?refresh_token=${currentAuth.refreshToken}`, {
+		const response = await api(`/auth/refresh?refresh_token=${currentAuth.refreshToken}`, {
 			method: 'POST'
 		});
 

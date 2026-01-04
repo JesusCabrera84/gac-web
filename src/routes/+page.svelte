@@ -277,6 +277,41 @@
 							</div>
 						</div>
 					</Card>
+
+					<!-- Planes Card -->
+					<Card
+						class="overflow-hidden group cursor-pointer hover:border-emerald-300 transition-colors"
+					>
+						<div class="p-6">
+							<div class="flex items-center mb-4">
+								<div class="p-2 bg-emerald-100 rounded-lg text-emerald-600 mr-3">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="20"
+										height="20"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										><path
+											d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"
+										/><path d="M7 7h.01" /></svg
+									>
+								</div>
+								<h3 class="font-bold text-slate-800 text-lg">Planes de Servicio</h3>
+							</div>
+							<p class="text-slate-500 text-sm mb-6">
+								Definición de paquetes, pricing, capacidades y límites para los productos.
+							</p>
+							<div class="flex space-x-3">
+								<a href="/products/plans" class="w-full">
+									<Button variant="outline" class="w-full">Gestionar Planes</Button>
+								</a>
+							</div>
+						</div>
+					</Card>
 				</div>
 			</div>
 

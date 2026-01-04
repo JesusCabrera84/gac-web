@@ -1,63 +1,12 @@
-import { PUBLIC_SISCOM_ADMIN_API_URL } from '$env/static/public';
-import { getInternalToken } from '$lib/services/api';
+import { internalApi } from '$lib/services/api';
 
 /**
  * Service to interact with the Commands API
  */
 export const CommandsService = {
-	/**
-	 * Generic fetch wrapper for the Commands API
-	 * @param {string} endpoint
-	 * @param {RequestInit} options
+	/*
+	 * Create a new command
 	 */
-	async api(endpoint, options = {}) {
-		let token;
-		try {
-			token = await getInternalToken('nexus');
-		} catch {
-			throw new Error('No se pudo autenticar con el servicio Nexus');
-		}
-
-		/** @type {any} */
-		const headers = {
-			Authorization: `Bearer ${token}`,
-			...options.headers
-		};
-
-		if (!headers['Content-Type']) {
-			headers['Content-Type'] = 'application/json';
-		}
-
-		const config = {
-			...options,
-			headers
-		};
-
-		// Ensure endpoint starts with / and remove trailing slash
-		const safeEndpoint = endpoint.replace(/\/$/, '');
-		const path = safeEndpoint.startsWith('/') ? safeEndpoint : `/${safeEndpoint}`;
-
-		const baseUrl = (PUBLIC_SISCOM_ADMIN_API_URL || '').replace(/\/$/, '');
-		const url = `${baseUrl}${path}`;
-
-		try {
-			const response = await fetch(url, config);
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({}));
-				throw new Error(errorData.message || `API Error: ${response.statusText}`);
-			}
-
-			if (response.status === 204) {
-				return null;
-			}
-
-			return await response.json();
-		} catch (error) {
-			console.error('Commands API Request Failed:', error);
-			throw error;
-		}
-	},
 
 	/**
 	 * Create a new command
@@ -68,7 +17,7 @@ export const CommandsService = {
 	 * @returns {Promise<Object>}
 	 */
 	async create(data) {
-		return this.api('/api/v1/commands', {
+		return internalApi('/api/v1/commands', {
 			method: 'POST',
 			body: JSON.stringify(data)
 		});
@@ -89,7 +38,7 @@ export const CommandsService = {
 		});
 
 		const queryString = searchParams.toString() ? `?${searchParams.toString()}` : '';
-		return this.api(`/api/v1/commands/device/${deviceId}${queryString}`);
+		return internalApi(`/api/v1/commands/device/${deviceId}${queryString}`);
 	},
 
 	/**
@@ -98,7 +47,7 @@ export const CommandsService = {
 	 * @returns {Promise<Object>}
 	 */
 	async sync(commandId) {
-		return this.api(`/api/v1/commands/${commandId}/sync`, {
+		return internalApi(`/api/v1/commands/${commandId}/sync`, {
 			method: 'POST'
 		});
 	}

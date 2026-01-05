@@ -17,7 +17,7 @@ export const CommandsService = {
 	 * @returns {Promise<Object>}
 	 */
 	async create(data) {
-		return internalApi('/api/v1/commands', {
+		return internalApi('/commands', {
 			method: 'POST',
 			body: JSON.stringify(data)
 		});
@@ -38,7 +38,7 @@ export const CommandsService = {
 		});
 
 		const queryString = searchParams.toString() ? `?${searchParams.toString()}` : '';
-		return internalApi(`/api/v1/commands/device/${deviceId}${queryString}`);
+		return internalApi(`/commands/device/${deviceId}${queryString}`);
 	},
 
 	/**
@@ -47,7 +47,7 @@ export const CommandsService = {
 	 * @returns {Promise<Object>}
 	 */
 	async sync(commandId) {
-		return internalApi(`/api/v1/commands/${commandId}/sync`, {
+		return internalApi(`/commands/${commandId}/sync`, {
 			method: 'POST'
 		});
 	}

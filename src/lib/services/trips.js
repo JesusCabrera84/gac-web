@@ -16,7 +16,7 @@ export const TripsService = {
 		});
 
 		const queryString = params.toString() ? `?${params.toString()}` : '';
-		return internalApi(`/api/v1/trips${queryString}`);
+		return internalApi(`/trips${queryString}`);
 	},
 
 	/**
@@ -35,6 +35,6 @@ export const TripsService = {
 		if (options.include_events) params.append('include_events', 'true');
 
 		const queryString = params.toString() ? `?${params.toString()}` : '';
-		return internalApi(`/api/v1/trips/${tripId}${queryString}`);
+		return internalApi(`/trips/${tripId}${queryString}`);
 	}
 };

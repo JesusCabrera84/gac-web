@@ -111,15 +111,16 @@ export const DevicesService = {
 	/**
 	 * Get the WebSocket URL for device stream
 	 * @param {string|string[]} deviceIds - Single ID or array of IDs
+	 * @param {string} token - Authentication token (PASETO)
 	 * @returns {string}
 	 */
-	getStreamUrl(deviceIds) {
+	getStreamUrl(deviceIds, token) {
 		const baseUrl = (PUBLIC_SISCOM_API_URL || '').replace(/\/$/, '');
 		// Replace http/https with ws/wss
 		const wsUrl = baseUrl.replace(/^http/, 'ws');
 		const ids = Array.isArray(deviceIds) ? deviceIds.join(',') : deviceIds;
 
-		return `${wsUrl}/devices/stream?device_ids=${ids}`;
+		return `${wsUrl}/api/v1/devices/stream?device_ids=${ids}&token=${token}`;
 	},
 
 	/**

@@ -7,7 +7,6 @@
 	import AssignmentPanel from '$lib/components/nexus/AssignmentPanel.svelte';
 	import { DevicesService } from '$lib/services/devices';
 	import { TripsService } from '$lib/services/trips';
-	import { getInternalToken } from '$lib/services/api';
 	import { goto } from '$app/navigation';
 	import { onMount, onDestroy } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -407,8 +406,7 @@
 				}
 
 				// 4. Connect WebSocket ONLY if we successfully loaded data
-				const token = await getInternalToken('nexus');
-				const streamUrl = DevicesService.getStreamUrl(deviceId, token);
+				const streamUrl = DevicesService.getStreamUrl(deviceId);
 				console.log('Connecting to stream:', streamUrl);
 
 				socket = new WebSocket(streamUrl);

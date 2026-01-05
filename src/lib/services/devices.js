@@ -1,4 +1,5 @@
 import { PUBLIC_SISCOM_API_URL } from '$env/static/public';
+import { dev } from '$app/environment';
 import { internalApi } from '$lib/services/api';
 
 /**
@@ -111,16 +112,24 @@ export const DevicesService = {
 	/**
 	 * Get the WebSocket URL for device stream
 	 * @param {string|string[]} deviceIds - Single ID or array of IDs
-	 * @param {string} token - Authentication token (PASETO)
 	 * @returns {string}
 	 */
-	getStreamUrl(deviceIds, token) {
-		const baseUrl = (PUBLIC_SISCOM_API_URL || '').replace(/\/$/, '');
-		// Replace http/https with ws/wss
-		const wsUrl = baseUrl.replace(/^http/, 'ws');
+	getStreamUrl(deviceIds) {
 		const ids = Array.isArray(deviceIds) ? deviceIds.join(',') : deviceIds;
 
-		return `${wsUrl}/api/v1/devices/stream?device_ids=${ids}&token=${token}`;
+		// In development: use Vite proxy with WebSocket support
+		// In production: use environment variable and convert to WebSocket URL
+		if (dev) {
+			// Use ws:// or wss:// based on current protocol
+			const protocol =
+				typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+			const host = typeof window !== 'undefined' ? window.location.host : 'localhost:5173';
+			return `${protocol}//${host}/api/public/stream?device_ids=${ids}`;
+		} else {
+			const baseUrl = (PUBLIC_SISCOM_API_URL || '').replace(/\/$/, '');
+			const wsUrl = baseUrl.replace(/^http/, 'ws');
+			return `${wsUrl}/api/v1/stream?device_ids=${ids}`;
+		}
 	},
 
 	/**

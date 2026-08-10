@@ -146,8 +146,9 @@
 			class="rounded-md p-3 text-sm"
 			style="background: var(--color-info-bg); color: var(--color-info); border: 1px solid color-mix(in srgb, var(--color-info) 30%, transparent)"
 		>
-			Al generar se creará un entorno aislado y un código de un solo uso. El código se mostrará
-			<strong>una única vez</strong> en la pantalla siguiente.
+			Al generar se emite un código de un solo uso, que se mostrará
+			<strong>una única vez</strong> en la pantalla siguiente. El entorno aislado se crea cuando el
+			cliente lo use.
 			<br />
 			Podrás extender la vigencia solo <strong>antes</strong> de que caduque: después, el entorno se destruye
 			y hay que generar una demo nueva.
@@ -174,7 +175,6 @@
 		otp={creado.otp}
 		accessUrl={creado.access_url}
 		expiresText={caducaEl}
-		provisioning={creado.provisioning !== false}
 		onClose={alCerrar}
 	/>
 {/if}

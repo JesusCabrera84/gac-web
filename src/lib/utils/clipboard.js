@@ -15,17 +15,56 @@ import { toast } from '$lib/stores/toast';
  */
 export async function copyToClipboard(text, label = 'Contenido') {
 	try {
-		if (!navigator?.clipboard?.writeText) {
-			throw new Error('clipboard no disponible');
+		if (navigator?.clipboard?.writeText) {
+			await navigator.clipboard.writeText(text);
+		} else if (!copyFallback(text)) {
+			throw new Error('sin portapapeles');
 		}
-		await navigator.clipboard.writeText(text);
 		toast.success(`${label} copiado al portapapeles`);
 		return true;
 	} catch {
-		// El navegador bloquea el portapapeles fuera de un gesto del usuario y en
-		// contextos no seguros. Se avisa en vez de fallar en silencio: el vendedor
-		// tiene que saber que no lo tiene copiado antes de colgar el teléfono.
+		// El API moderno puede fallar aunque exista: el navegador lo bloquea sin
+		// gesto del usuario o si se deniega el permiso. Se reintenta con el
+		// mecanismo antiguo antes de rendirse.
+		if (copyFallback(text)) {
+			toast.success(`${label} copiado al portapapeles`);
+			return true;
+		}
 		toast.error(`No se pudo copiar ${label.toLowerCase()}. Cópialo a mano.`);
+		return false;
+	}
+}
+
+/**
+ * Copiado por el mecanismo antiguo, para contextos no seguros.
+ *
+ * `navigator.clipboard` **solo existe en contextos seguros** (HTTPS o
+ * localhost). Esta consola se sirve por HTTP en la red interna, así que ahí es
+ * `undefined` y el copiado fallaba entero — que es justo donde más duele,
+ * porque el vendedor tiene el código delante y no puede llevárselo.
+ *
+ * `document.execCommand('copy')` está obsoleto pero sigue funcionando en ese
+ * escenario, y es el único que lo hace.
+ *
+ * @param {string} text
+ * @returns {boolean}
+ */
+function copyFallback(text) {
+	try {
+		if (typeof document === 'undefined') return false;
+		const area = document.createElement('textarea');
+		area.value = text;
+		area.setAttribute('readonly', '');
+		// Fuera de la vista pero enfocable: display:none no permite seleccionar.
+		area.style.position = 'fixed';
+		area.style.top = '-1000px';
+		area.style.opacity = '0';
+		document.body.appendChild(area);
+		area.select();
+		const ok = document.execCommand?.('copy') ?? false;
+		document.body.removeChild(area);
+		return ok;
+	} catch {
 		return false;
 	}
 }

@@ -17,7 +17,6 @@
 	 * 	otp: string,
 	 * 	accessUrl: string,
 	 * 	expiresText?: string,
-	 * 	provisioning?: boolean,
 	 * 	onClose?: () => void
 	 * }}
 	 */
@@ -28,7 +27,6 @@
 		otp,
 		accessUrl,
 		expiresText = '',
-		provisioning = true,
 		onClose = () => {}
 	} = $props();
 
@@ -194,14 +192,10 @@
 					{#if expiresText}
 						<p>Caduca si no se canjea antes del {expiresText}.</p>
 					{/if}
-					{#if provisioning}
-						<p>El entorno se está creando; tarda un par de minutos. El código ya es válido.</p>
-					{:else}
-						<p class="text-warning">
-							El código es válido, pero el aprovisionamiento del entorno falló. Revísalo en el
-							detalle antes de que el cliente entre.
-						</p>
-					{/if}
+					<p>
+						El entorno se crea cuando el cliente use el código, y tarda un par de minutos en tener
+						datos. Si nunca lo usa, no se consume nada.
+					</p>
 				</div>
 
 				<label class="flex items-start gap-2 text-sm text-app-secondary">

@@ -5,13 +5,18 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import DemoAccessReveal from '$lib/components/nexus/DemoAccessReveal.svelte';
-	import { DemosService } from '$lib/services/demos';
+	import {
+		DemosService,
+		DEMO_SCENARIOS,
+		DEMO_SCENARIO_DEFAULT,
+		scenarioDescription
+	} from '$lib/services/demos';
 	import { formatApiErrorMessage } from '$lib/utils/apiErrors';
 	import { formatUnix } from '$lib/utils/demoStatus';
 
 	let companyName = $state('');
 	let recipientEmail = $state('');
-	let scenario = $state('normal');
+	let scenario = $state(DEMO_SCENARIO_DEFAULT);
 	let ttlHours = $state(168);
 	let notes = $state('');
 
@@ -25,6 +30,8 @@
 	// La fecha calculada se muestra en texto, no solo "7 días": el vendedor está
 	// en una llamada y necesita decir una fecha en voz alta.
 	let caducaEl = $derived(formatUnix(Math.floor(Date.now() / 1000) + ttlHours * 3600));
+
+	let descripcionEscenario = $derived(scenarioDescription(scenario));
 
 	let puedeEnviar = $derived(
 		companyName.trim().length > 0 && /.+@.+\..+/.test(recipientEmail.trim()) && !saving
@@ -98,11 +105,16 @@
 
 			<div class="grid gap-4 sm:grid-cols-2">
 				<div>
-					<label for="demo-scenario" class="gac-label">Escenario</label>
+					<label for="demo-scenario" class="gac-label">Escenario de simulación</label>
+					<!-- Los valores son los que acepta el entorno de demo
+					     (services/account-simulator/src/scenario.gleam). Inventarse uno
+					     falla con "unknown scenario" al aprovisionar. -->
 					<select id="demo-scenario" class="gac-input" bind:value={scenario}>
-						<option value="normal">Normal</option>
-						<option value="alertas">Alertas</option>
+						{#each DEMO_SCENARIOS as escenario (escenario.id)}
+							<option value={escenario.id}>{escenario.label}</option>
+						{/each}
 					</select>
+					<p class="mt-1 text-xs text-app-muted">{descripcionEscenario}</p>
 				</div>
 
 				<div>

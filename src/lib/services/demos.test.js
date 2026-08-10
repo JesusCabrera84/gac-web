@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const apiMock = vi.hoisted(() => vi.fn());
 vi.mock('$lib/services/api', () => ({ api: (...args) => apiMock(...args) }));
 
-const { DemosService } = await import('./demos.js');
+const { DemosService, DEMO_SCENARIOS, DEMO_SCENARIO_DEFAULT, scenarioDescription } =
+	await import('./demos.js');
 
 describe('DemosService', () => {
 	beforeEach(() => apiMock.mockReset());
@@ -89,5 +90,42 @@ describe('DemosService', () => {
 	it('propaga los errores en vez de tragarselos', async () => {
 		apiMock.mockRejectedValueOnce(new Error('502'));
 		await expect(DemosService.revoke('d1')).rejects.toThrow('502');
+	});
+});
+
+describe('escenarios', () => {
+	// Los ids los resuelve scenario.gleam del entorno de demo contra los ficheros
+	// config/demo/scenario-*.yaml. Si alguien anade uno aqui sin que exista alli,
+	// el aprovisionamiento falla DESPUES de que el vendedor entregue el codigo.
+	const ACEPTADOS = ['normal', 'alerts', 'commercial'];
+
+	it('solo ofrece escenarios que el entorno de demo acepta', () => {
+		for (const escenario of DEMO_SCENARIOS) {
+			expect(ACEPTADOS).toContain(escenario.id);
+		}
+	});
+
+	it('los ofrece todos', () => {
+		expect(DEMO_SCENARIOS.map((e) => e.id).sort()).toEqual([...ACEPTADOS].sort());
+	});
+
+	it('cada uno tiene etiqueta y descripcion', () => {
+		for (const escenario of DEMO_SCENARIOS) {
+			expect(escenario.label.length).toBeGreaterThan(0);
+			expect(escenario.description.length).toBeGreaterThan(0);
+		}
+	});
+
+	it('el escenario por defecto existe en la lista', () => {
+		expect(DEMO_SCENARIOS.map((e) => e.id)).toContain(DEMO_SCENARIO_DEFAULT);
+	});
+
+	it('la lista es inmutable', () => {
+		expect(Object.isFrozen(DEMO_SCENARIOS)).toBe(true);
+	});
+
+	it('scenarioDescription devuelve cadena vacia para uno desconocido', () => {
+		expect(scenarioDescription('inventado')).toBe('');
+		expect(scenarioDescription(DEMO_SCENARIO_DEFAULT)).not.toBe('');
 	});
 });

@@ -5,6 +5,7 @@ import {
 	humanizeHours,
 	isTerminal,
 	formatUnix,
+	formatISO,
 	vigencia,
 	UMBRAL_URGENCIA_HORAS
 } from './demoStatus.js';
@@ -214,5 +215,22 @@ describe('formatUnix', () => {
 
 	it('formatea una fecha real', () => {
 		expect(formatUnix(unix(AHORA))).toMatch(/2026/);
+	});
+});
+
+describe('formatISO', () => {
+	it('sin valor devuelve un guion', () => {
+		expect(formatISO(null)).toBe('—');
+		expect(formatISO(undefined)).toBe('—');
+		expect(formatISO('')).toBe('—');
+	});
+
+	it('una fecha invalida no revienta', () => {
+		expect(formatISO('no-es-una-fecha')).toBe('—');
+	});
+
+	it('coincide con formatUnix para el mismo instante', () => {
+		const iso = '2026-08-10T12:00:00.000Z';
+		expect(formatISO(iso)).toBe(formatUnix(Math.floor(Date.parse(iso) / 1000)));
 	});
 });

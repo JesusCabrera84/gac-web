@@ -7,11 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- Los botones de copiar fallaban en la consola servida por HTTP: `navigator.clipboard` solo existe en contextos seguros. Se añade respaldo con `document.execCommand`, que es el único que funciona ahí
-- El diálogo del código decía que el entorno se estaba creando. No es cierto: lo crea el invite-gate cuando el cliente canjea el código, porque necesita datos que nacen de ese registro
-
 ### Added
 
 - Engineering foundation: `AGENTS.md`, `CONTRIBUTING.md`, `SECURITY.md`, `.editorconfig`, `.nvmrc`
@@ -40,6 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minor type fixes in `Input.svelte`, `billing.js`, and shipments detail page so `svelte-check` passes in CI
 - CI: inject `PUBLIC_*` env vars before `svelte-check` (with localhost fallbacks)
 - CI `quality` job runs unit tests after `svelte-check`
+
+## [1.7.2] - 2026-08-10
+
+### Fixed
+
+- Los botones de copiar fallaban en la consola servida por HTTP: `navigator.clipboard` solo existe en contextos seguros. Se añade respaldo con `document.execCommand`, que es el único que funciona ahí
+- El diálogo del código decía que el entorno se estaba creando. No es cierto: lo crea el invite-gate cuando el cliente canjea el código, porque necesita datos que nacen de ese registro
 
 ## [1.7.1] - 2026-08-10
 

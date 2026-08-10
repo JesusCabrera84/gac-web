@@ -8,6 +8,7 @@
 	 * 	confirmLabel?: string,
 	 * 	cancelLabel?: string,
 	 * 	variant?: 'danger' | 'info',
+	 * 	confirmPhrase?: string,
 	 * 	onConfirm?: () => void | Promise<void>,
 	 * 	onCancel?: () => void
 	 * }} */
@@ -18,9 +19,22 @@
 		confirmLabel = 'Confirmar',
 		cancelLabel = 'Cancelar',
 		variant = 'danger',
+		// Cuando se indica, hay que escribirla para habilitar el boton. Reservado
+		// para lo verdaderamente irreversible: un clic de mas solo se justifica
+		// cuando no hay vuelta atras.
+		confirmPhrase = undefined,
 		onConfirm = () => {},
 		onCancel
 	} = $props();
+
+	let typed = $state('');
+	let confirmDisabled = $derived(Boolean(confirmPhrase) && typed.trim() !== confirmPhrase);
+
+	// Al cerrarse hay que limpiar: si no, reabrir el dialogo lo mostraria ya
+	// confirmado con lo tecleado la vez anterior.
+	$effect(() => {
+		if (!isOpen) typed = '';
+	});
 
 	async function handleConfirm() {
 		try {
@@ -116,11 +130,28 @@
 				</div>
 			</div>
 
+			{#if confirmPhrase}
+				<div>
+					<label for="confirm-dialog-phrase" class="gac-label">
+						Escribe <span class="font-mono text-app">{confirmPhrase}</span> para confirmar
+					</label>
+					<input
+						id="confirm-dialog-phrase"
+						class="gac-input"
+						bind:value={typed}
+						autocomplete="off"
+						autocapitalize="off"
+						spellcheck="false"
+					/>
+				</div>
+			{/if}
+
 			<div class="flex justify-end gap-3 pt-2">
 				<Button variant="outline" size="sm" onclick={handleCancel}>{cancelLabel}</Button>
 				<Button
 					variant={variant === 'danger' ? 'danger' : 'primary'}
 					size="sm"
+					disabled={confirmDisabled}
 					onclick={handleConfirm}
 				>
 					{confirmLabel}

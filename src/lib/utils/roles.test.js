@@ -8,7 +8,11 @@ import {
 	canWriteNexus,
 	isViewerOnly,
 	pathRequiresNexusAccess,
-	pathRequiresAdmin
+	pathRequiresAdmin,
+	canAccessDemos,
+	canGenerateDemos,
+	canDestroyDemo,
+	pathRequiresDemosAccess
 } from './roles.js';
 
 describe('roles', () => {
@@ -54,5 +58,52 @@ describe('roles', () => {
 	it('pathRequiresAdmin matches internal users route', () => {
 		expect(pathRequiresAdmin('/admin/internal-users')).toBe(true);
 		expect(pathRequiresAdmin('/admin/orders')).toBe(false);
+	});
+});
+
+describe('accesos de demo', () => {
+	const vendedor = { roles: ['vendedor'], user_id: 'u-1' };
+	const admin = { roles: ['admin'], user_id: 'u-2' };
+	const otro = { roles: ['user'], user_id: 'u-3' };
+
+	it('vendedor y admin entran; el resto no', () => {
+		expect(canAccessDemos(vendedor)).toBe(true);
+		expect(canAccessDemos(admin)).toBe(true);
+		expect(canAccessDemos(otro)).toBe(false);
+		expect(canAccessDemos(null)).toBe(false);
+	});
+
+	it('no depende de canAccessNexus, que exige admin', () => {
+		// Es el motivo de que la pantalla viva en /sales y no en /products/nexus.
+		expect(canAccessNexus(vendedor)).toBe(false);
+		expect(canAccessDemos(vendedor)).toBe(true);
+	});
+
+	it('generar exige lo mismo que ver', () => {
+		expect(canGenerateDemos(vendedor)).toBe(true);
+		expect(canGenerateDemos(otro)).toBe(false);
+	});
+
+	it('destruir: solo el creador o un admin', () => {
+		const demoDelVendedor = { created_by: 'u-1' };
+		expect(canDestroyDemo(vendedor, demoDelVendedor)).toBe(true);
+		expect(canDestroyDemo(admin, demoDelVendedor)).toBe(true);
+		expect(canDestroyDemo({ roles: ['vendedor'], user_id: 'u-9' }, demoDelVendedor)).toBe(false);
+	});
+
+	it('destruir tolera datos incompletos sin conceder permiso', () => {
+		expect(canDestroyDemo(null, { created_by: 'u-1' })).toBe(false);
+		expect(canDestroyDemo(vendedor, null)).toBe(false);
+		expect(canDestroyDemo({ roles: ['vendedor'] }, { created_by: undefined })).toBe(false);
+	});
+
+	it('acepta id ademas de user_id', () => {
+		expect(canDestroyDemo({ roles: ['vendedor'], id: 'u-1' }, { created_by: 'u-1' })).toBe(true);
+	});
+
+	it('pathRequiresDemosAccess cubre la seccion y no otras', () => {
+		expect(pathRequiresDemosAccess('/sales/demos')).toBe(true);
+		expect(pathRequiresDemosAccess('/sales/demos/abc')).toBe(true);
+		expect(pathRequiresDemosAccess('/products/nexus')).toBe(false);
 	});
 });

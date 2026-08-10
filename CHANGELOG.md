@@ -9,10 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Botón **Regenerar acceso** en la ficha de la demo: libera una cuenta que quedó a medias y emite un código nuevo sin salir de la consola, para cuando el cliente se registró pero no consigue iniciar sesión
-
-### Added
-
 - Engineering foundation: `AGENTS.md`, `CONTRIBUTING.md`, `SECURITY.md`, `.editorconfig`, `.nvmrc`
 - Release discipline: `CHANGELOG.md`, `docs/RELEASE.md`, `scripts/setup.sh`, Husky hooks (commitlint, lint-staged, pre-push)
 - CI guardrails: `ci.yml` (lint, type-check, build, audit) + Gitleaks and Semgrep in `security` job
@@ -39,6 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minor type fixes in `Input.svelte`, `billing.js`, and shipments detail page so `svelte-check` passes in CI
 - CI: inject `PUBLIC_*` env vars before `svelte-check` (with localhost fallbacks)
 - CI `quality` job runs unit tests after `svelte-check`
+
+## [1.7.3] - 2026-08-10
+
+### Added
+
+- Botón **Regenerar acceso** en la ficha de la demo: libera una cuenta que quedó a medias y emite un código nuevo sin salir de la consola, para cuando el cliente se registró pero no consigue iniciar sesión
 
 ## [1.7.2] - 2026-08-10
 

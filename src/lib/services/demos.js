@@ -177,6 +177,19 @@ export const DemosService = {
 	},
 
 	/**
+	 * Libera una cuenta que quedó a medias y emite un código nuevo.
+	 *
+	 * Devuelve el código en claro, igual que `create`, y con la misma regla:
+	 * se ve una sola vez. Invalida el anterior.
+	 *
+	 * @param {string} demoId
+	 * @returns {Promise<DemoCreated>}
+	 */
+	async regenerate(demoId) {
+		return unwrap(await api(`/nexus-demos/${demoId}/regenerate`, { method: 'POST' }));
+	},
+
+	/**
 	 * Destruye el entorno. No se puede deshacer.
 	 *
 	 * @param {string} demoId

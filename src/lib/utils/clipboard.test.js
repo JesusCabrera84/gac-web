@@ -44,23 +44,48 @@ describe('copyToClipboard', () => {
 		expect(toastMock.success).toHaveBeenCalledWith('Código copiado al portapapeles');
 	});
 
-	it('sin API de portapapeles avisa en vez de fallar en silencio', async () => {
+	// Sin HTTPS, navigator.clipboard NO existe. Es el caso real de esta consola,
+	// que se sirve por HTTP en la red interna.
+	it('sin API moderna cae al mecanismo antiguo y copia igual', async () => {
 		stubClipboard(undefined);
+		const exec = vi.fn().mockReturnValue(true);
+		document.execCommand = exec;
+
+		const ok = await copyToClipboard('482917', 'Código');
+
+		expect(ok).toBe(true);
+		expect(exec).toHaveBeenCalledWith('copy');
+		expect(toastMock.success).toHaveBeenCalled();
+	});
+
+	it('si el navegador rechaza el API moderna, reintenta con la antigua', async () => {
+		stubClipboard({ writeText: vi.fn().mockRejectedValue(new Error('denegado')) });
+		document.execCommand = vi.fn().mockReturnValue(true);
+
+		const ok = await copyToClipboard('482917');
+
+		expect(ok).toBe(true);
+		expect(toastMock.success).toHaveBeenCalled();
+	});
+
+	it('si tampoco hay mecanismo antiguo, avisa en vez de fallar en silencio', async () => {
+		stubClipboard(undefined);
+		document.execCommand = vi.fn().mockReturnValue(false);
 
 		const ok = await copyToClipboard('482917', 'Código');
 
 		expect(ok).toBe(false);
-		expect(toastMock.error).toHaveBeenCalled();
 		expect(toastMock.error.mock.calls[0][0]).toMatch(/a mano/i);
 	});
 
-	it('si el navegador rechaza, tambien avisa', async () => {
-		stubClipboard({ writeText: vi.fn().mockRejectedValue(new Error('denegado')) });
+	it('no deja el textarea temporal en el DOM', async () => {
+		stubClipboard(undefined);
+		document.execCommand = vi.fn().mockReturnValue(true);
+		const antes = document.querySelectorAll('textarea').length;
 
-		const ok = await copyToClipboard('482917');
+		await copyToClipboard('482917');
 
-		expect(ok).toBe(false);
-		expect(toastMock.error).toHaveBeenCalled();
+		expect(document.querySelectorAll('textarea').length).toBe(antes);
 	});
 
 	it('usa una etiqueta por defecto', async () => {

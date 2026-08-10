@@ -89,7 +89,6 @@ export function scenarioDescription(id) {
  * @property {string} access_url
  * @property {string} otp
  * @property {number} [otp_expires_in_seconds]
- * @property {boolean} [provisioning]
  */
 
 /** gac-api envuelve todo en { message, data }. */

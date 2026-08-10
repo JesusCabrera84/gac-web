@@ -7,12 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- El alta de demo ofrecía un escenario inexistente (`alertas`). Los válidos son `commercial`, `normal` y `alerts`, resueltos por el entorno de demo; elegir uno inventado fallaba al aprovisionar, después de entregar el código al cliente
-- Faltaba el escenario `commercial` (`Presentación comercial Querétaro`), el diseñado para esta pantalla. Pasa a ser el valor por defecto
-- La ficha de detalle mostraba dos formatos de fecha distintos según de dónde viniera el dato
-
 ### Added
 
 - Engineering foundation: `AGENTS.md`, `CONTRIBUTING.md`, `SECURITY.md`, `.editorconfig`, `.nvmrc`
@@ -41,6 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minor type fixes in `Input.svelte`, `billing.js`, and shipments detail page so `svelte-check` passes in CI
 - CI: inject `PUBLIC_*` env vars before `svelte-check` (with localhost fallbacks)
 - CI `quality` job runs unit tests after `svelte-check`
+
+## [1.7.1] - 2026-08-10
+
+### Fixed
+
+- El alta de demo ofrecía un escenario inexistente (`alertas`). Los válidos son `commercial`, `normal` y `alerts`, resueltos por el entorno de demo; elegir uno inventado fallaba al aprovisionar, después de entregar el código al cliente
+- Faltaba el escenario `commercial` (`Presentación comercial Querétaro`), el diseñado para esta pantalla. Pasa a ser el valor por defecto
+- La ficha de detalle mostraba dos formatos de fecha distintos según de dónde viniera el dato
 
 ## [1.7.0] - 2026-08-10
 

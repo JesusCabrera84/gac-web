@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Accesos de demo de Nexus en `/sales/demos` (listado, alta y detalle) para que un vendedor genere y administre demostraciones a prospectos
+- Sección `sales` en el Sidebar, con acceso para los roles `admin` y `vendedor`
+- `demoStatus.js` (estado y vigencia derivados del reloj) y `clipboard.js` (copiado anunciado y mensaje listo para el cliente), con cobertura completa
+- `DemoAccessReveal.svelte`: entrega del código de un solo uso, no descartable por accidente
+- Prop opcional `confirmPhrase` en `ConfirmDialog` para las acciones irreversibles
+
 - Engineering foundation: `AGENTS.md`, `CONTRIBUTING.md`, `SECURITY.md`, `.editorconfig`, `.nvmrc`
 - Release discipline: `CHANGELOG.md`, `docs/RELEASE.md`, `scripts/setup.sh`, Husky hooks (commitlint, lint-staged, pre-push)
 - CI guardrails: `ci.yml` (lint, type-check, build, audit) + Gitleaks and Semgrep in `security` job

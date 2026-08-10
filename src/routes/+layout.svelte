@@ -9,9 +9,11 @@
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import {
+		canAccessDemos,
 		canAccessNexus,
 		canManageInternalUsers,
 		pathRequiresAdmin,
+		pathRequiresDemosAccess,
 		pathRequiresNexusAccess
 	} from '$lib/utils/roles';
 
@@ -38,6 +40,10 @@
 				return;
 			}
 			if (pathRequiresNexusAccess(path) && !canAccessNexus(state.user)) {
+				await goto('/');
+				return;
+			}
+			if (pathRequiresDemosAccess(path) && !canAccessDemos(state.user)) {
 				await goto('/');
 			}
 		});

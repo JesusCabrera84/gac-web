@@ -1,13 +1,13 @@
 <script>
 	import { page } from '$app/stores';
 	import { auth, logout } from '$lib/stores/auth';
-	import { canAccessNexus, canManageInternalUsers } from '$lib/utils/roles';
+	import { canAccessDemos, canAccessNexus, canManageInternalUsers } from '$lib/utils/roles';
 
 	/** @type {{ isCollapsed?: boolean }} */
 	let { isCollapsed = $bindable(false) } = $props();
 
 	/**
-	 * @typedef {{ href: string, label: string, icon: string, section?: 'main' | 'commerce' | 'admin', nexus?: boolean, adminOnly?: boolean }} MenuItem
+	 * @typedef {{ href: string, label: string, icon: string, section?: 'main' | 'sales' | 'commerce' | 'admin', nexus?: boolean, adminOnly?: boolean, demos?: boolean }} MenuItem
 	 */
 
 	/** @type {MenuItem[]} */
@@ -29,6 +29,7 @@
 			nexus: true
 		},
 		{ href: '/products/plans', label: 'Planes', icon: 'Tag', section: 'main', nexus: true },
+		{ href: '/sales/demos', label: 'Demos', icon: 'KeyRound', section: 'sales', demos: true },
 		{ href: '/admin/orders', label: 'Órdenes', icon: 'ShoppingCart', section: 'commerce' },
 		{ href: '/admin/payments', label: 'Pagos', icon: 'CreditCard', section: 'commerce' },
 		{ href: '/admin/shipments', label: 'Envíos', icon: 'Truck', section: 'commerce' },
@@ -45,6 +46,7 @@
 		menuItems.filter((item) => {
 			if (item.adminOnly) return canManageInternalUsers($auth.user);
 			if (item.nexus) return canAccessNexus($auth.user);
+			if (item.demos) return canAccessDemos($auth.user);
 			return true;
 		})
 	);
@@ -292,6 +294,24 @@
 							<path d="M5 18H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3h3l4 5v5h-2" />
 							<circle cx="7.5" cy="18.5" r="2.5" />
 							<circle cx="17.5" cy="18.5" r="2.5" />
+						</svg>
+					{:else if item.icon === 'KeyRound'}
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path
+								d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"
+							/>
+							<circle cx="16.5" cy="7.5" r=".5" fill="currentColor" />
 						</svg>
 					{/if}
 				</span>

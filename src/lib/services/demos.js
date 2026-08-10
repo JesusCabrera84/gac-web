@@ -1,6 +1,47 @@
 import { api } from './api';
 
 /**
+ * Escenarios que acepta el entorno de demo.
+ *
+ * Los identificadores NO son libres: los resuelve
+ * `services/account-simulator/src/scenario.gleam` contra los ficheros de
+ * `config/demo/scenario-*.yaml`. Inventarse uno hace que el aprovisionamiento
+ * falle con "unknown scenario" **después** de que el vendedor ya haya
+ * entregado el código al cliente.
+ *
+ * @type {ReadonlyArray<{ id: string, label: string, description: string }>}
+ */
+export const DEMO_SCENARIOS = Object.freeze([
+	{
+		id: 'commercial',
+		label: 'Presentación comercial',
+		description:
+			'Recorrido pensado para enseñar el producto: flota circulando en Querétaro con actividad variada.'
+	},
+	{
+		id: 'normal',
+		label: 'Operación normal',
+		description: 'Operación sin incidencias. Útil para mostrar el día a día de una flota.'
+	},
+	{
+		id: 'alerts',
+		label: 'Generación de alertas',
+		description: 'Provoca alertas de ignición y geocerca. Para enseñar el módulo de alertas.'
+	}
+]);
+
+/** Escenario por defecto: esta pantalla es una herramienta comercial. */
+export const DEMO_SCENARIO_DEFAULT = 'commercial';
+
+/**
+ * @param {string} id
+ * @returns {string}
+ */
+export function scenarioDescription(id) {
+	return DEMO_SCENARIOS.find((s) => s.id === id)?.description ?? '';
+}
+
+/**
  * Accesos de demo de Nexus. Habla con gac-api, que es quien guarda la ficha
  * comercial y quien conoce el secreto del entorno de demo — el navegador no lo
  * ve nunca.

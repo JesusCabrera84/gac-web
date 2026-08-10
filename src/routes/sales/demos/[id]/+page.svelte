@@ -7,6 +7,7 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
+	import DemoAccessReveal from '$lib/components/nexus/DemoAccessReveal.svelte';
 	import { DemosService } from '$lib/services/demos';
 	import {
 		demoStatusBadge,
@@ -33,6 +34,24 @@
 	let extendHours = $state(72);
 	let showReset = $state(false);
 	let showRevoke = $state(false);
+	let showRegenerate = $state(false);
+
+	/** @type {import('$lib/services/demos').DemoCreated | null} */
+	let regenerado = $state(null);
+	let revealOpen = $state(false);
+
+	async function regenerar() {
+		working = true;
+		try {
+			regenerado = await DemosService.regenerate(demoId);
+			revealOpen = true;
+			await load();
+		} catch (err) {
+			toast.error(formatApiErrorMessage(err));
+		} finally {
+			working = false;
+		}
+	}
 
 	onMount(load);
 
@@ -137,6 +156,27 @@
 						Generar demo nueva para {demo.company_name}
 					</Button>
 				{/if}
+			</Card>
+		{/if}
+
+		<!-- Solo con la demo viva. En estado terminal la lapida ya ofrece generar
+		     una nueva, y dos botones que hacen casi lo mismo confunden mas que
+		     ayudan: regenerar es para un cliente que se registro y no consigue
+		     entrar, no para una demo cuyo entorno ya no existe. -->
+		{#if puedeDestruir && !terminal}
+			<Card class="space-y-3 p-6">
+				<h2 class="text-lg font-semibold text-app">¿El cliente no puede entrar?</h2>
+				<p class="max-w-2xl text-sm text-app-secondary">
+					Si el alta se quedó a medias —el cliente se registró pero no consigue iniciar sesión—,
+					esto libera su cuenta y emite un código nuevo. La ficha no cambia: misma empresa, mismas
+					notas.
+				</p>
+				<p class="text-sm text-app-muted">El código anterior dejará de funcionar.</p>
+				<div>
+					<Button variant="outline" disabled={working} onclick={() => (showRegenerate = true)}>
+						Regenerar acceso
+					</Button>
+				</div>
 			</Card>
 		{/if}
 
@@ -294,6 +334,16 @@
 </div>
 
 <ConfirmDialog
+	bind:isOpen={showRegenerate}
+	variant="danger"
+	title="Regenerar el acceso"
+	message="Se libera la cuenta del cliente y se emite un código nuevo. El código anterior dejará de funcionar, así que si el cliente ya lo tenía, habrá que darle el nuevo."
+	confirmLabel="Regenerar"
+	confirmPhrase={demo?.company_name}
+	onConfirm={regenerar}
+/>
+
+<ConfirmDialog
 	bind:isOpen={showReset}
 	variant="danger"
 	title="Resetear los datos de la demo"
@@ -311,3 +361,14 @@
 	confirmPhrase={demo?.company_name}
 	onConfirm={() => ejecutar(() => DemosService.revoke(demoId), 'Demo dada de baja')}
 />
+
+{#if regenerado}
+	<DemoAccessReveal
+		bind:isOpen={revealOpen}
+		company={demo?.company_name || ''}
+		email={demo?.recipient_email || ''}
+		otp={regenerado.otp}
+		accessUrl={regenerado.access_url}
+		onClose={() => (regenerado = null)}
+	/>
+{/if}

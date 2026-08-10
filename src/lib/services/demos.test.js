@@ -75,9 +75,17 @@ describe('DemosService', () => {
 		expect(JSON.parse(options.body)).toEqual({ ttl_hours: 72 });
 	});
 
+	it('regenerate devuelve el codigo nuevo', async () => {
+		apiMock.mockResolvedValueOnce({ data: { otp: '926314', demo: { demo_id: 'd1' } } });
+		const out = await DemosService.regenerate('d1');
+		expect(out.otp).toBe('926314');
+		expect(apiMock.mock.calls[0][0]).toBe('/nexus-demos/d1/regenerate');
+	});
+
 	it.each([
 		['reset', '/nexus-demos/d1/reset'],
-		['revoke', '/nexus-demos/d1/revoke']
+		['revoke', '/nexus-demos/d1/revoke'],
+		['regenerate', '/nexus-demos/d1/regenerate']
 	])('%s hace POST sin cuerpo', async (metodo, endpointEsperado) => {
 		apiMock.mockResolvedValueOnce({ data: {} });
 		await DemosService[metodo]('d1');

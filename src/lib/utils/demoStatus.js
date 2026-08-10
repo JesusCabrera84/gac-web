@@ -168,6 +168,21 @@ export function humanizeHours(horas) {
 }
 
 /**
+ * Formato unico de fecha para todo lo relacionado con demos. Sin esto, una misma
+ * tarjeta acaba mostrando "28/7/2026, 9:56:41 p.m." junto a "01 ago 2026,
+ * 01:56 p.m." segun de donde venga el dato.
+ *
+ * @param {string|null|undefined} iso
+ * @returns {string}
+ */
+export function formatISO(iso) {
+	if (!iso) return '—';
+	const ms = Date.parse(iso);
+	if (Number.isNaN(ms)) return '—';
+	return formatUnix(Math.floor(ms / 1000));
+}
+
+/**
  * @param {number|null|undefined} unix
  * @returns {string}
  */

@@ -8,7 +8,13 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
 	import { DemosService } from '$lib/services/demos';
-	import { demoStatusBadge, vigencia, isTerminal, formatUnix } from '$lib/utils/demoStatus';
+	import {
+		demoStatusBadge,
+		vigencia,
+		isTerminal,
+		formatUnix,
+		formatISO
+	} from '$lib/utils/demoStatus';
 	import { canDestroyDemo, canGenerateDemos } from '$lib/utils/roles';
 	import { formatApiErrorMessage } from '$lib/utils/apiErrors';
 	import { toast } from '$lib/stores/toast';
@@ -157,7 +163,7 @@
 					<div>
 						<dt class="text-app-muted">Generada</dt>
 						<dd class="text-app">
-							{demo.created_at ? new Date(demo.created_at).toLocaleString('es-MX') : '—'}
+							{formatISO(demo.created_at)}
 						</dd>
 					</div>
 					<div>

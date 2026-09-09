@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - El panel de asignación ya no escribe `'preparado'` por el `PATCH` plano: usa `PATCH /devices/{id}/status`. Si el equipo ya tiene dueño, muestra titular y estado; si está montado en una unidad, hay que liberarlo antes de reasignar.
 - El mapa no se marca listo hasta que Google Maps termina de cargar. Si falla, se muestra el error y no se reintenta en bucle.
 
+### Changed
+
+- Lockfile de CI: `npm audit fix` y Vitest 4.1.11 para cerrar los high/OSV que tumbaban `quality` y `security` (el código del corte no tocaba esas dependencias).
+
 ### Added
 
 - Engineering foundation: `AGENTS.md`, `CONTRIBUTING.md`, `SECURITY.md`, `.editorconfig`, `.nvmrc`

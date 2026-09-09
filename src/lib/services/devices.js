@@ -22,6 +22,7 @@ import { internalApi } from '$lib/services/api';
  * @property {string} [client_id]
  * @property {string} [organization_id]
  * @property {string} [last_comm_at]
+ * @property {string} [last_assignment_at]
  */
 
 /**
@@ -129,23 +130,18 @@ export const DevicesService = {
 	},
 
 	/**
-	 * Asigna un dispositivo a una organización.
+	 * Asigna un dispositivo a una organización (estado `preparado`).
+	 * Pasa por PATCH /devices/{id}/status: valida la transición, deja rastro y
+	 * no deja una fila activa en unit_devices contradiciendo el estado.
 	 * @param {string} id
 	 * @param {string} organizationId
-	 * @param {string} [status]
 	 * @returns {Promise<Device>}
 	 */
-	async assignOrganization(id, organizationId, status = 'preparado') {
-		/** @type {Record<string, string>} */
-		const payload = { organization_id: organizationId };
-		if (status) payload.status = status;
-
-		return /** @type {Promise<Device>} */ (
-			internalApi(`/devices/${id}`, {
-				method: 'PATCH',
-				body: JSON.stringify(payload)
-			})
-		);
+	async assignOrganization(id, organizationId) {
+		return this.updateStatus(id, {
+			new_status: 'preparado',
+			client_id: organizationId
+		});
 	},
 
 	/**

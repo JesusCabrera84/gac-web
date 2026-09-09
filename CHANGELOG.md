@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- La pantalla de dispositivos deja de llamar a siscom-api desde el navegador (ese origen no está en `ALLOWED_ORIGINS` y el preflight se rechazaba). Las comunicaciones van same-origin por `/api/public`; el Node de producción las reenvía. El resto de GAC no cambia.
+- El panel de asignación ya no escribe `'preparado'` por el `PATCH` plano: usa `PATCH /devices/{id}/status`. Si el equipo ya tiene dueño, muestra titular y estado; si está montado en una unidad, hay que liberarlo antes de reasignar.
+- El mapa no se marca listo hasta que Google Maps termina de cargar. Si falla, se muestra el error y no se reintenta en bucle.
+
 ### Added
 
 - Engineering foundation: `AGENTS.md`, `CONTRIBUTING.md`, `SECURITY.md`, `.editorconfig`, `.nvmrc`

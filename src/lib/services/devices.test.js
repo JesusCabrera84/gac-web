@@ -39,6 +39,15 @@ describe('DevicesService', () => {
 		expect(url).toBe('wss://public.example.com/api/v1/stream?device_ids=d1');
 	});
 
+	it('assignOrganization uses PATCH /status with preparado', async () => {
+		internalApiMock.mockResolvedValueOnce({ device_id: 'd1', status: 'preparado' });
+		await DevicesService.assignOrganization('d1', 'org-1');
+		expect(internalApiMock).toHaveBeenCalledWith('/devices/d1/status', {
+			method: 'PATCH',
+			body: JSON.stringify({ new_status: 'preparado', client_id: 'org-1' })
+		});
+	});
+
 	it('getLatestCommunication uses public service', async () => {
 		internalApiMock.mockResolvedValueOnce({ device_id: 'd1' });
 		await DevicesService.getLatestCommunication('d1');

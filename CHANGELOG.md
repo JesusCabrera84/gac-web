@@ -7,23 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- La pantalla de dispositivos deja de llamar a siscom-api desde el navegador (ese origen no está en `ALLOWED_ORIGINS` y el preflight se rechazaba). Las comunicaciones van same-origin por `/api/public`; el Node de producción las reenvía. El resto de GAC no cambia.
-- El panel de asignación ya no escribe `'preparado'` por el `PATCH` plano: usa `PATCH /devices/{id}/status`. Si el equipo ya tiene dueño, muestra titular y estado; si está montado en una unidad, hay que liberarlo antes de reasignar.
-- El mapa no se marca listo hasta que Google Maps termina de cargar. Si falla, se muestra el error y no se reintenta en bucle.
-
-### Security
-
-- **El proxy `/api/public` pasa a lista blanca.** Es el primer endpoint de servidor de gac-web y no tiene autenticación delante —la sesión de GAC vive en el cliente—, así que lo que deje pasar queda expuesto a cualquiera que alcance el dominio, y al otro lado siscom-api sirve el histórico de posiciones sin autenticar. Se acota a lo que el panel usa:
-  - Solo las dos rutas de comunicaciones (`devices/{id}/communications` y `.../latest`). Cualquier otra: 404.
-  - Solo `GET`/`HEAD`. Un método de escritura no cruza aunque alguien exporte el handler en la ruta.
-  - `publicBackendUrl` resuelve la URL con `new URL` y comprueba el prefijo **después** de normalizar: sin eso, un `%2e%2e` se salía de `/api/v1/` y alcanzaba cualquier ruta del mismo host, porque `fetch` normaliza sin avisar.
-  - Cabeceras por lista blanca en las dos direcciones. Hacia el backend **no viaja `Authorization`**: `internalApi` adjunta el PASETO interno de GAC a todas sus llamadas, y ese token es del plano de control — que llegue al plano de datos contradice la separación de claves de la Fase 1. Hacia el navegador se cae `Set-Cookie`, que al ser same-origin instalaría cookies del backend **en el dominio de GAC**.
-
-### Changed
-
-- Lockfile de CI: `npm audit fix` y Vitest 4.1.11 para cerrar los high/OSV que tumbaban `quality` y `security` (el código del corte no tocaba esas dependencias).
+> **Nota.** Lo que queda aquí abajo ya salió en `1.7.3` o antes —`AGENTS.md`,
+> `CONTRIBUTING.md` y `SECURITY.md` están en ese tag— y nunca se movió a su
+> sección. Se deja como está: repartirlo exigiría saber qué entró en cada tag
+> anterior, y adivinarlo produciría un historial falso.
 
 ### Added
 
@@ -53,6 +40,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minor type fixes in `Input.svelte`, `billing.js`, and shipments detail page so `svelte-check` passes in CI
 - CI: inject `PUBLIC_*` env vars before `svelte-check` (with localhost fallbacks)
 - CI `quality` job runs unit tests after `svelte-check`
+
+## [1.7.4] - 2026-09-09
+
+### Fixed
+
+- La pantalla de dispositivos deja de llamar a siscom-api desde el navegador (ese origen no está en `ALLOWED_ORIGINS` y el preflight se rechazaba). Las comunicaciones van same-origin por `/api/public`; el Node de producción las reenvía. El resto de GAC no cambia.
+- El panel de asignación ya no escribe `'preparado'` por el `PATCH` plano: usa `PATCH /devices/{id}/status`. Si el equipo ya tiene dueño, muestra titular y estado; si está montado en una unidad, hay que liberarlo antes de reasignar.
+- El mapa no se marca listo hasta que Google Maps termina de cargar. Si falla, se muestra el error y no se reintenta en bucle.
+
+### Security
+
+- **El proxy `/api/public` pasa a lista blanca.** Es el primer endpoint de servidor de gac-web y no tiene autenticación delante —la sesión de GAC vive en el cliente—, así que lo que deje pasar queda expuesto a cualquiera que alcance el dominio, y al otro lado siscom-api sirve el histórico de posiciones sin autenticar. Se acota a lo que el panel usa:
+  - Solo las dos rutas de comunicaciones (`devices/{id}/communications` y `.../latest`). Cualquier otra: 404.
+  - Solo `GET`/`HEAD`. Un método de escritura no cruza aunque alguien exporte el handler en la ruta.
+  - `publicBackendUrl` resuelve la URL con `new URL` y comprueba el prefijo **después** de normalizar: sin eso, un `%2e%2e` se salía de `/api/v1/` y alcanzaba cualquier ruta del mismo host, porque `fetch` normaliza sin avisar.
+  - Cabeceras por lista blanca en las dos direcciones. Hacia el backend **no viaja `Authorization`**: `internalApi` adjunta el PASETO interno de GAC a todas sus llamadas, y ese token es del plano de control — que llegue al plano de datos contradice la separación de claves de la Fase 1. Hacia el navegador se cae `Set-Cookie`, que al ser same-origin instalaría cookies del backend **en el dominio de GAC**.
+
+### Changed
+
+- Lockfile de CI: `npm audit fix` y Vitest 4.1.11 para cerrar los high/OSV que tumbaban `quality` y `security` (el código del corte no tocaba esas dependencias).
 
 ## [1.7.3] - 2026-08-10
 

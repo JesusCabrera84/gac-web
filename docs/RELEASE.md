@@ -30,18 +30,40 @@
    git push origin develop
    ```
 
-3. Create and push an annotated tag:
+3. Fast-forward `master` to `develop`, so that `master` keeps meaning "what is
+   in production":
+
+   ```bash
+   git push origin develop:master
+   ```
+
+   If the push is rejected, someone committed directly to `master`. That is the
+   point — it fails loudly instead of letting the branches drift. Merge `master`
+   into `develop` and continue.
+
+4. Create and push an annotated tag:
 
    ```bash
    git tag -a vX.Y.Z -m "release: vX.Y.Z"
    git push origin vX.Y.Z
    ```
 
-4. **Deploy workflow** (`.github/workflows/deploy.yml`) runs automatically on `v*.*.*` tag push:
+5. **Deploy workflow** (`.github/workflows/deploy.yml`) runs automatically on `v*.*.*` tag push:
    - Builds Docker image
    - Deploys to EC2 test environment
 
-5. Verify deployment in GitHub Actions and on the target server.
+6. Verify deployment in GitHub Actions and on the target server.
+
+## Cross-repo dependencies
+
+This app talks to `siscom-admin-api` and `siscom-api`. When a release needs an
+API change that is not deployed yet, **the API goes first**. Say it in the tag
+message, with the version.
+
+On 2026-09-09, `v1.7.4` needed `siscom-admin-api v1.29.1` (`PATCH
+/devices/{id}/status` accepting the GAC service token). Shipping the console
+first would have meant a 401 on the assignment screen — a broken feature with a
+green deploy.
 
 ## CI vs deploy
 

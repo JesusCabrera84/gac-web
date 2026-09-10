@@ -1,10 +1,6 @@
 import { get } from 'svelte/store';
 import { dev } from '$app/environment';
-import {
-	PUBLIC_GAC_API_URL,
-	PUBLIC_SISCOM_ADMIN_API_URL,
-	PUBLIC_SISCOM_API_URL
-} from '$env/static/public';
+import { PUBLIC_GAC_API_URL, PUBLIC_SISCOM_ADMIN_API_URL } from '$env/static/public';
 import { formatApiErrorMessage } from '$lib/utils/apiErrors';
 
 /** @type {import('svelte/store').Writable<any>|null} */
@@ -138,15 +134,18 @@ export async function internalApi(endpoint, options = {}) {
 	const safeEndpoint = endpoint.replace(/\/$/, '');
 	const path = safeEndpoint.startsWith('/') ? safeEndpoint : `/${safeEndpoint}`;
 
-	// In development: use Vite proxy (/api/admin or /api/public)
-	// In production: use environment variables
+	// El plano de datos (`public`) siempre va same-origin: en dev lo cubre el
+	// proxy de Vite; en producción, `src/routes/api/public`. Pegarle al
+	// PUBLIC_SISCOM_API_URL desde el navegador lo bloquea CORS — ese origen no
+	// está en ALLOWED_ORIGINS. Admin-api sí reconoce la consola; ahí el
+	// desvío directo en producción se queda.
 	let url;
-	if (dev) {
-		const prefix = service === 'public' ? '/api/public' : '/api/admin';
-		url = `${prefix}${path}`;
+	if (service === 'public') {
+		url = `/api/public${path}`;
+	} else if (dev) {
+		url = `/api/admin${path}`;
 	} else {
-		const baseUrl = service === 'public' ? PUBLIC_SISCOM_API_URL : PUBLIC_SISCOM_ADMIN_API_URL;
-		url = `${baseUrl}/api/v1${path}`;
+		url = `${PUBLIC_SISCOM_ADMIN_API_URL}/api/v1${path}`;
 	}
 
 	try {

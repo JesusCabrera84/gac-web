@@ -69,6 +69,9 @@
 	let streamDeviceId = $state(null);
 
 	let mapInitialized = $state(false);
+	let mapError = $state('');
+	let mapLoading = $state(false);
+	let liveDataError = $state('');
 
 	const allColumns = $derived(
 		communications.length > 0 ? Object.keys(communications[0] || {}).filter((k) => k !== 'id') : []
@@ -99,7 +102,7 @@
 	});
 
 	$effect(() => {
-		if (mapContainer && !mapInitialized) {
+		if (mapContainer && !mapInitialized && !mapError && !mapLoading) {
 			initMap();
 		}
 	});
@@ -189,9 +192,8 @@
 	}
 
 	async function initMap() {
+		mapLoading = true;
 		try {
-			mapInitialized = true;
-
 			const { Loader } = await import('@googlemaps/js-api-loader');
 			const loader = new Loader({
 				apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -251,9 +253,14 @@
 			if (selectedDeviceId && activeTab === 'communications') {
 				loadDeviceDataAndConnectStream(selectedDeviceId);
 			}
+			mapInitialized = true;
+			mapError = '';
 		} catch (e) {
 			console.error('Failed to initialize Google Maps:', e);
 			mapInitialized = false;
+			mapError = 'No se pudo cargar el mapa. Compruebe la clave y los referentes permitidos.';
+		} finally {
+			mapLoading = false;
 		}
 	}
 
@@ -271,6 +278,7 @@
 	/** @param {string} deviceId */
 	async function loadDeviceDataAndConnectStream(deviceId) {
 		cleanupStream();
+		liveDataError = '';
 
 		try {
 			const data = await DevicesService.getLatestCommunication(deviceId);
@@ -339,6 +347,10 @@
 			}
 		} catch (error) {
 			console.error('[nexus] loadDeviceDataAndConnectStream error', error);
+			liveDataError =
+				error instanceof Error
+					? error.message
+					: 'No se pudieron cargar las comunicaciones de este dispositivo.';
 		}
 	}
 
@@ -388,6 +400,10 @@
 		} catch (error) {
 			console.error(error);
 			communications = [];
+			liveDataError =
+				error instanceof Error
+					? error.message
+					: 'No se pudo cargar el historial de comunicaciones.';
 		} finally {
 			isLoadingCommunications = false;
 		}
@@ -541,6 +557,7 @@
 					<div class="flex-1 overflow-auto p-4">
 						<AssignmentPanel
 							bind:selectedDevices={selectedDevicesForAssignment}
+							{devices}
 							onClose={() => {
 								activeTab = 'commands';
 							}}
@@ -559,6 +576,9 @@
 							<p class="mt-1 text-xs" style="color: var(--color-text-muted)">
 								Última: {lastCommunicationTime}
 							</p>
+						{/if}
+						{#if liveDataError}
+							<p class="mt-2 text-xs" style="color: var(--color-danger)">{liveDataError}</p>
 						{/if}
 					</div>
 
@@ -646,7 +666,16 @@
 
 			<!-- Map -->
 			<div class="relative min-h-full flex-1" bind:this={mapContainer}>
-				{#if !mapInitialized}
+				{#if mapError}
+					<div
+						class="absolute inset-0 z-10 flex items-center justify-center p-6"
+						style="background: var(--color-bg-primary)"
+					>
+						<p class="max-w-sm text-center text-sm" style="color: var(--color-danger)">
+							{mapError}
+						</p>
+					</div>
+				{:else if !mapInitialized}
 					<div
 						class="absolute inset-0 flex items-center justify-center"
 						style="background: var(--color-bg-primary)"

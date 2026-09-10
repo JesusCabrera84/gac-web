@@ -1,10 +1,19 @@
 <script>
 	import { ClientsService } from '$lib/services/clients';
 	import { DevicesService } from '$lib/services/devices';
+	import { OrganizationsService } from '$lib/services/organizations';
 	import Button from '$lib/components/ui/Button.svelte';
 
-	/** @type {{ selectedDevices?: string[], onClose?: () => void, onSuccess?: () => void }} */
-	let { selectedDevices = $bindable([]), onClose = () => {}, onSuccess = () => {} } = $props();
+	const ASSIGNABLE = new Set(['nuevo', 'devuelto']);
+	const OWNED = new Set(['preparado', 'enviado', 'entregado', 'asignado']);
+
+	/** @type {{ selectedDevices?: string[], devices?: import('$lib/services/devices').Device[], onClose?: () => void, onSuccess?: () => void }} */
+	let {
+		selectedDevices = $bindable([]),
+		devices = [],
+		onClose = () => {},
+		onSuccess = () => {}
+	} = $props();
 
 	/** @type {any[]} */
 	let accounts = $state([]);
@@ -15,6 +24,9 @@
 	let loadingAccounts = $state(false);
 	let loadingOrgs = $state(false);
 	let assigning = $state(false);
+	let releasing = $state(false);
+	let confirmReassign = $state(false);
+	let ownerName = $state('');
 
 	/** @type {string | null} */
 	let selectedAccount = $state(null);
@@ -26,7 +38,24 @@
 	let successCount = $state(0);
 	let failCount = $state(0);
 
-	// Derived filtered accounts
+	/** @type {import('$lib/services/devices').Device[]} */
+	let selectedRecords = $derived(
+		/** @type {import('$lib/services/devices').Device[]} */ (
+			selectedDevices.map((id) => devices.find((device) => device.device_id === id)).filter(Boolean)
+		)
+	);
+
+	let primary = $derived(selectedRecords[0] ?? null);
+	let isMounted = $derived(selectedRecords.some((device) => device.status === 'asignado'));
+	let hasOwner = $derived(
+		selectedRecords.some((device) => Boolean(device.client_id) || OWNED.has(device.status || ''))
+	);
+	let canAssignDirectly = $derived(
+		selectedRecords.length > 0 &&
+			selectedRecords.every((device) => !device.status || ASSIGNABLE.has(device.status))
+	);
+	let showAssignForm = $derived(canAssignDirectly || confirmReassign);
+
 	let filteredAccounts = $derived(
 		accounts.filter((account) => {
 			const term = accountSearch.toLowerCase();
@@ -35,6 +64,30 @@
 			return name.includes(term) || email.includes(term);
 		})
 	);
+
+	$effect(() => {
+		selectedDevices.join(',');
+		confirmReassign = false;
+	});
+
+	$effect(() => {
+		const orgId = primary?.client_id;
+		if (!orgId) {
+			ownerName = '';
+			return;
+		}
+		let cancelled = false;
+		OrganizationsService.getById(orgId)
+			.then((org) => {
+				if (!cancelled) ownerName = org.name || String(orgId);
+			})
+			.catch(() => {
+				if (!cancelled) ownerName = String(orgId);
+			});
+		return () => {
+			cancelled = true;
+		};
+	});
 
 	$effect(() => {
 		loadAccounts();
@@ -76,6 +129,34 @@
 		}
 	}
 
+	function formatAssignedAt(value) {
+		if (!value) return '';
+		try {
+			return new Date(value).toLocaleString('es-MX');
+		} catch {
+			return value;
+		}
+	}
+
+	async function handleRelease() {
+		if (selectedDevices.length === 0) return;
+		releasing = true;
+		failCount = 0;
+		successCount = 0;
+		try {
+			for (const deviceId of selectedDevices) {
+				await DevicesService.updateStatus(deviceId, { new_status: 'devuelto' });
+				successCount++;
+			}
+			if (onSuccess) onSuccess();
+		} catch (e) {
+			console.error('Failed to release device:', e);
+			failCount++;
+		} finally {
+			releasing = false;
+		}
+	}
+
 	async function handleAssign() {
 		if (!selectedOrg || selectedDevices.length === 0) return;
 
@@ -86,9 +167,10 @@
 
 		for (const deviceId of selectedDevices) {
 			try {
-				// User requested 'asignado' or similar status update.
-				// Based on standard flow: organization assignment -> 'preparado'
-				await DevicesService.assignOrganization(deviceId, selectedOrg, 'preparado');
+				await DevicesService.updateStatus(deviceId, {
+					new_status: 'preparado',
+					client_id: selectedOrg
+				});
 				successCount++;
 			} catch (e) {
 				console.error(`Failed to assign device ${deviceId}:`, e);
@@ -111,9 +193,17 @@
 		style="background: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border); box-shadow: var(--shadow-sm)"
 	>
 		<div>
-			<h3 class="text-lg font-bold text-app">Asignar Dispositivos</h3>
+			<h3 class="text-lg font-bold text-app">
+				{hasOwner && !showAssignForm ? 'Asignación' : 'Asignar Dispositivos'}
+			</h3>
 			<p class="text-sm text-app-muted">
-				{selectedDevices.length} dispositivos seleccionados para asignación
+				{#if selectedDevices.length === 0}
+					Seleccione un dispositivo de la lista
+				{:else if hasOwner && !showAssignForm}
+					{primary?.device_id} · {primary?.status || 'sin estado'}
+				{:else}
+					{selectedDevices.length} dispositivos seleccionados para asignación
+				{/if}
 			</p>
 		</div>
 		<Button variant="ghost" size="sm" onclick={onClose}>Cancelar</Button>
@@ -224,6 +314,66 @@
 					<div class="pt-8">
 						<Button variant="primary" class="min-w-[120px]" onclick={onClose}>Hecho</Button>
 					</div>
+				{/if}
+			</div>
+		{:else if selectedDevices.length === 0}
+			<div class="mx-auto max-w-md py-16 text-center">
+				<p class="text-sm text-app-muted">
+					Seleccione un dispositivo en la tabla para ver su asignación.
+				</p>
+			</div>
+		{:else if hasOwner && !showAssignForm}
+			<div class="mx-auto max-w-lg space-y-6 py-6">
+				<div class="gac-panel-solid p-6 space-y-4">
+					<p class="text-xs font-semibold uppercase tracking-wider text-app-muted">
+						Titular actual
+					</p>
+					<div>
+						<div class="text-base font-semibold text-app">
+							{ownerName || primary?.client_id || 'Sin nombre'}
+						</div>
+						<div class="mt-1 text-sm text-app-muted">
+							Estado: <span class="font-medium text-app">{primary?.status}</span>
+						</div>
+						{#if primary?.last_assignment_at}
+							<div class="mt-1 text-sm text-app-muted">
+								Desde: {formatAssignedAt(primary.last_assignment_at)}
+							</div>
+						{/if}
+					</div>
+					{#if isMounted}
+						<p class="text-sm text-app-muted">
+							Este equipo está vinculado a una unidad. Liberarlo lo devuelve al inventario (<span
+								class="font-medium text-app">devuelto</span
+							>) y cierra la asignación activa. No se puede volver a «preparado» sin desmontarlo.
+						</p>
+					{:else}
+						<p class="text-sm text-app-muted">
+							Ya tiene dueño. Reasignar es una acción explícita, no la pantalla por defecto.
+						</p>
+					{/if}
+				</div>
+				<div class="flex flex-col gap-2">
+					{#if isMounted}
+						<Button
+							variant="primary"
+							class="h-12 w-full"
+							onclick={handleRelease}
+							disabled={releasing}
+						>
+							{releasing ? 'Liberando…' : 'Liberar al inventario'}
+						</Button>
+					{:else}
+						<Button variant="primary" class="h-12 w-full" onclick={() => (confirmReassign = true)}>
+							Reasignar a otra organización
+						</Button>
+					{/if}
+					<Button variant="ghost" class="w-full" onclick={onClose}>Cerrar</Button>
+				</div>
+				{#if failCount > 0}
+					<p class="text-center text-sm" style="color: var(--color-danger)">
+						No se pudo completar la operación. Intente de nuevo.
+					</p>
 				{/if}
 			</div>
 		{:else}
@@ -447,7 +597,12 @@
 						</div>
 					</div>
 
-					<div class="pt-2">
+					<div class="pt-2 space-y-2">
+						{#if confirmReassign}
+							<Button variant="ghost" class="w-full" onclick={() => (confirmReassign = false)}>
+								Volver
+							</Button>
+						{/if}
 						<Button
 							variant="primary"
 							class="h-12 w-full text-base font-medium transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"

@@ -170,6 +170,29 @@ describe('api service', () => {
 		expect(fetch.mock.calls[1][0]).toBe('/api/public/devices/1/communications/latest');
 	});
 
+	it('internalApi uses public proxy in production to avoid CORS', async () => {
+		env.dev = false;
+		vi.resetModules();
+		vi.stubGlobal('fetch', vi.fn());
+		authStore = writable({
+			token: 'access-token',
+			refreshToken: null,
+			user: null,
+			isAuthenticated: true
+		});
+		const mod = await import('./api.js');
+		mod.initApi(authStore);
+		fetch
+			.mockResolvedValueOnce({
+				ok: true,
+				status: 200,
+				json: async () => ({ data: 'paseto-token' })
+			})
+			.mockResolvedValueOnce({ ok: true, status: 200, json: async () => [] });
+		await mod.internalApi('/devices/1/communications/latest', { service: 'public' });
+		expect(fetch.mock.calls[1][0]).toBe('/api/public/devices/1/communications/latest');
+	});
+
 	it('internalApi throws when internal auth fails', async () => {
 		fetch.mockResolvedValueOnce({
 			ok: false,

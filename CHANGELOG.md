@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `docs/RELEASE.md` gana el paso de espejo —`git push origin develop:master`, para que `master` siga significando «lo que está en producción»— y una sección de **dependencias entre repos**: cuando una release necesita un cambio de API que aún no está desplegado, la API va primero y se dice en el mensaje del tag. El caso del 9/09 queda escrito: `v1.7.4` exigía `siscom-admin-api v1.29.1`, y sacar la consola antes habría dado 401 en Asignación con un despliegue en verde.
+
 > **Nota.** Lo que queda aquí abajo ya salió en `1.7.3` o antes —`AGENTS.md`,
 > `CONTRIBUTING.md` y `SECURITY.md` están en ese tag— y nunca se movió a su
 > sección. Se deja como está: repartirlo exigiría saber qué entró en cada tag
